@@ -62,7 +62,7 @@ function setupDatabase(req, res) {
   client.query(`CREATE TABLE users (
       id serial PRIMARY KEY NOT NULL,
       login varchar(64) UNIQUE NOT NULL,
-      hash_pwd varchar(128) NOT NULL,
+      hashPwd varchar(128) NOT NULL,
       salt varchar(16) NOT NULL,
       email varchar(128) UNIQUE NOT NULL,
       surname varchar(64),
