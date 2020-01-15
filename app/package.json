@@ -1,0 +1,29 @@
+{
+  "name": "test_node",
+  "version": "1.0.0",
+  "description": "genial",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx nodemon --exec npx babel-node --plugins=@babel/plugin-transform-modules-commonjs index.js",
+    "test": "echo \"Error: no test specified\""
+  },
+  "author": "vburidar",
+  "license": "ISC",
+  "dependencies": {
+    "@babel/cli": "^7.8.3",
+    "@babel/core": "^7.8.3",
+    "@babel/node": "^7.8.3",
+    "@babel/plugin-transform-modules-commonjs": "^7.8.3",
+    "@babel/preset-env": "^7.8.3",
+    "body-parser": "^1.19.0",
+    "connect-pg-simple": "^6.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "express-session": "^1.17.0",
+    "pg": "^7.17.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
+  }
+}
