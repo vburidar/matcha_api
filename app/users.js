@@ -1,7 +1,7 @@
-import pg from 'pg'
-import crypto from 'crypto'
+import pg from 'pg';
+import crypto from 'crypto';
 
-const Client = pg.Client
+const { Client } = pg;
 
 const client = new Client({
   user: 'vburidar',
@@ -9,28 +9,27 @@ const client = new Client({
   database: 'matcha',
   password: '',
   port: 5432,
-})
-client.connect()
+});
+client.connect();
 
-function hash_pwd(raw_pwd)
-{
+function hashPwd(rawPwd) {
   const salt = crypto.randomBytes(Math.ceil(8)).toString('hex').slice(0, 16);
-  const hash_pwd = crypto.createHash('whirlpool').update(raw_pwd + salt).digest("hex");
-  return ([hash_pwd, salt]);
+  const hashedPwd = crypto.createHash('whirlpool').update(rawPwd + salt).digest('hex');
+  return ([hashedPwd, salt]);
 }
 
-async function createUser (req, res) {
-  const hash_data = hash_pwd(req.body.password)
+async function createUser(req, res) {
+  const hashData = hashPwd(req.body.password);
   const user = await client.query(
-    'INSERT INTO users (login, hash_pwd, salt, email) VALUES ($1, $2, $3, $4) RETURNING *',
+    'INSERT INTO users (login, hashPwd, salt, email) VALUES ($1, $2, $3, $4) RETURNING *',
     [
       req.body.login,
-      hash_data[0],
-      hash_data[1],
+      hashData[0],
+      hashData[1],
       req.body.email,
-    ]
-  )
-  res.json(user.rows[0])
+    ],
+  );
+  res.json(user.rows[0]);
 }
 
-export default createUser
+export default createUser;

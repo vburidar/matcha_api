@@ -1,6 +1,6 @@
 import pg from 'pg';
 
-const {Client} = pg;
+const { Client } = pg;
 
 const client = new Client({
   // user: process.env.DB_USERNAME,
@@ -18,7 +18,7 @@ const client = new Client({
 
 client.connect();
 
-function reset_database(req, res) {
+function resetDatabase(req, res) {
   console.log('DROPPING THE COMPLETE DATABASE');
   client.query('DROP TABLE IF EXISTS sessions');
   client.query('DROP TABLE IF EXISTS users_interests');
@@ -38,7 +38,7 @@ function reset_database(req, res) {
   res.send('DROPPING DONE');
 }
 
-function setup_database(req, res) {
+function setupDatabase(req, res) {
   console.log('SETUP OF A CLEAN DATABASE');
   client.query('DROP TABLE IF EXISTS sessions');
   client.query('DROP TABLE IF EXISTS users_interests');
@@ -127,6 +127,6 @@ function setup_database(req, res) {
 }
 
 export default {
-  reset_database,
-  setup_database,
+  resetDatabase,
+  setupDatabase,
 };

@@ -3,8 +3,7 @@ import pg from 'pg';
 import PgStore from 'connect-pg-simple';
 
 function sessionManager() {
-  const pgSession = PgStore(session)
-
+  const PgSession = PgStore(session);
   const pgPool = new pg.Pool({
     user: 'vburidar',
     host: 'localhost',
@@ -12,17 +11,17 @@ function sessionManager() {
     password: '',
     port: 5432,
   });
-  
+
   return session({
     secret: 'P:TXN$jA.5:&qU!7wY]bLLo&`vze]?',
     resave: false,
     cookie: { maxAge: 60000 },
-    store: new pgSession({
-      pool : pgPool,
-      tableName : 'sessions'
+    store: new PgSession({
+      pool: pgPool,
+      tableName: 'sessions',
     }),
     saveUninitialized: false,
-  })
+  });
 }
 
 export default sessionManager;
