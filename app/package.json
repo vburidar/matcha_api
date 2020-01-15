@@ -4,7 +4,8 @@
   "description": "genial",
   "main": "index.js",
   "scripts": {
-    "start": "npx nodemon --exec npx babel-node --plugins=@babel/plugin-transform-modules-commonjs index.js",
+    "start": "nodemon --exec npx babel-node --plugins=@babel/plugin-transform-modules-commonjs index.js",
+    "lint": "eslint index.js users.js example.js middlewares/*.js",
     "test": "echo \"Error: no test specified\""
   },
   "author": "vburidar",
@@ -24,6 +25,28 @@
     "pg": "^7.17.0"
   },
   "devDependencies": {
+    "eslint": "^6.8.0",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-plugin-import": "^2.20.0",
     "nodemon": "^2.0.2"
-  }
+  },
+  "eslintConfig": {
+    "env": {
+        "browser": true,
+        "es6": true
+    },
+    "extends": [
+        "airbnb-base"
+    ],
+    "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly"
+    },
+    "parserOptions": {
+        "ecmaVersion": 2018,
+        "sourceType": "module"
+    },
+    "rules": {
+    }
+}
 }
