@@ -63,6 +63,7 @@ function setup_database(req, res) {
       id serial PRIMARY KEY NOT NULL,
       login varchar(64) UNIQUE NOT NULL,
       hash_pwd varchar(128) NOT NULL,
+      salt varchar(16) NOT NULL,
       email varchar(128) UNIQUE NOT NULL,
       surname varchar(64),
       name varchar(64),
