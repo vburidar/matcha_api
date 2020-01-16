@@ -26,4 +26,27 @@ export default (app) => {
       }
     },
   );
+
+  route.post(
+    '/signin',
+    requestValidator({
+      body: {
+        login: [rv.required(), rv.string()],
+        password: [rv.required(), rv.string(), rv.password()],
+      },
+    }),
+    async (req, res, next) => {
+      try {
+        const user = await AuthService.signin(req.body);
+        if (user) {
+          req.session.connected = true;
+          req.session.login = user.login;
+        }
+        return res.status(200).send(user);
+      } catch (err) {
+        console.log(err);
+        return next(err);
+      }
+    },
+  );
 };

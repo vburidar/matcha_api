@@ -24,4 +24,16 @@ export default class User {
     );
     return (user.rows[0]);
   }
+
+  static async getUserByLogin(login) {
+    const user = await client.query(
+      `SELECT
+        *
+      FROM users
+      WHERE
+        login=$1`,
+      [login],
+    );
+    return (user.rows[0]);
+  }
 }
