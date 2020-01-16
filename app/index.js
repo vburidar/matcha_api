@@ -5,7 +5,8 @@ import cors from 'cors';
 
 import setup from './config/setup';
 import sessionManager from './config/sessionManager';
-import createUser from './users';
+import { requestValidator } from './middlewares/requestValidator';
+import { createUserSchema, createUser } from './users';
 
 dotenv.config();
 
@@ -19,7 +20,7 @@ app.use(sessionManager());
 app.get('/setup_database', setup.setupDatabase);
 app.get('/reset_database', setup.resetDatabase);
 
-app.post('/api/users', createUser);
+app.post('/api/users', requestValidator(createUserSchema), createUser);
 
 app.get('/', (req, res) => {
   console.log(req.session);

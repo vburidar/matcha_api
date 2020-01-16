@@ -1,7 +1,16 @@
 import pg from 'pg';
 import crypto from 'crypto';
+import { rv } from './middlewares/requestValidator';
 
 const { Client } = pg;
+
+const createUserSchema = {
+  body: {
+    login: [rv.required(), rv.string()],
+    password: [rv.required(), rv.string(), rv.password()],
+    email: [rv.required(), rv.string(), rv.email()]
+  },
+};
 
 const client = new Client({
   user: 'vburidar',
@@ -32,4 +41,7 @@ async function createUser(req, res) {
   res.json(user.rows[0]);
 }
 
-export default createUser;
+export {
+  createUser,
+  createUserSchema,
+};
