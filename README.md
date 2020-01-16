@@ -1,5 +1,10 @@
 # Matcha
 
+## Folder architecture
+
+The folder architecture is greatly inspired by this very complete article:
+https://softwareontheroad.com/ideal-nodejs-project-structure/
+
 ## Request validator
 
 Each time you create a route, you will have to implement data validation for incoming HTTP request.

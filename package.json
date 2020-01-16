@@ -4,8 +4,8 @@
   "description": "genial",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --exec npx babel-node --plugins=@babel/plugin-transform-modules-commonjs index.js",
-    "lint": "eslint index.js users.js example.js middlewares/*.js",
+    "start": "nodemon --exec npx babel-node --plugins=@babel/plugin-transform-modules-commonjs src/app.js",
+    "lint": "eslint src/**/*.js",
     "test": "echo \"Error: no test specified\""
   },
   "author": "vburidar",
