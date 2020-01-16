@@ -4,13 +4,14 @@
 
 Each time you create a route, you will have to implement data validation for incoming HTTP request.
 
-First, import the list of rules, named rv:
+First, import the list of rules, named rv, then create a schema to compare with HTTP request, and export it:
 ```js
 import { rv } from './middlewares/requestValidator';
-```
 
-Then, create a schema to compare with HTTP request, like this:
-```js
+function createUser() {
+  // Code
+}
+
 const createUserSchema = {
   body: {
     login: [rv.required(), rv.string()],
@@ -20,6 +21,8 @@ const createUserSchema = {
     validated: [rv.required(), rv.bool()],
   },
 };
+
+export { createUser, createUserSchema };
 ```
 
 List of available rules:
