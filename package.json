@@ -23,6 +23,7 @@
     "express": "^4.17.1",
     "express-session": "^1.17.0",
     "luxon": "^1.21.3",
+    "nodemailer": "^6.4.2",
     "pg": "^7.17.0"
   },
   "devDependencies": {
