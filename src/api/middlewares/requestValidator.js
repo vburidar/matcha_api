@@ -60,7 +60,7 @@ const rv = {
     return (val, propertyName) => {
       if (typeof val !== 'undefined') {
         if (!/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/ig.test(val)) {
-          throw new ErrException({id:'invalid-email', description: 'Invalid email', propertyName });
+          throw new ErrException({ id: 'invalid-email', description: 'Invalid email', propertyName });
         }
       }
     };
@@ -98,7 +98,7 @@ const rv = {
     return (val, propertyName) => {
       if (typeof val !== 'undefined') {
         if (typeof val !== 'boolean') {
-          throw new ErrException({ id: 'invalid-boolean', description: 'Invalid boolean', propertyName} );
+          throw new ErrException({ id: 'invalid-boolean', description: 'Invalid boolean', propertyName });
         }
       }
     };
