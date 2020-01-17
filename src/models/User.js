@@ -1,19 +1,9 @@
 
-import { Client } from 'pg';
-import config from '../config';
-
-const client = new Client({
-  user: config.postgres.user,
-  host: config.postgres.host,
-  database: config.postgres.database,
-  password: config.postgres.password,
-  port: config.postgres.port,
-});
-client.connect();
+import PostgresService from '../services/postgres';
 
 export default class User {
   static async create(login, hashedPassword, salt, email) {
-    const user = await client.query(
+    const user = await PostgresService.pool.query(
       'INSERT INTO users (login, hashpwd, salt, email) VALUES ($1, $2, $3, $4) RETURNING id, login, email',
       [
         login,
