@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import AuthService from '../../services/auth';
-import { requestValidator, rv } from '../middlewares';
+import { requestValidator, rv } from '../middlewares/requestValidator';
+import { errorHandler } from '../middlewares/errorHandler';
 
 const route = Router();
 
@@ -21,7 +22,6 @@ export default (app) => {
         const user = await AuthService.signup(req.body);
         return res.status(200).send(user);
       } catch (err) {
-        console.log(err);
         return next(err);
       }
     },
@@ -44,9 +44,10 @@ export default (app) => {
         }
         return res.status(200).send(user);
       } catch (err) {
-        console.log(err);
         return next(err);
       }
     },
   );
+
+  app.use(errorHandler);
 };
