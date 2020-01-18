@@ -16,7 +16,7 @@ export default class User {
   }
 
   static async getUserByLogin(login) {
-    const user = await client.query(
+    const user = await PostgresService.pool.query(
       `SELECT
         *
       FROM users

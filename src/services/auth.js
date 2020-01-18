@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import User from '../models/User';
 import { ErrException } from '../api/middlewares/errorHandler';
+import EmailService from './email';
 
 export default class AuthService {
   static async signup(userInput) {
@@ -12,7 +13,17 @@ export default class AuthService {
         salt,
         userInput.email,
       );
-      return user;
+      try {
+        const emailData = {
+          to: userInput.email,
+          subject: 'Subscription to Match Point',
+          text: 'Congratulations!</br>You just subscribed to Match Point</br>Connect to your account to start meeting and dating!',
+        };
+        EmailService.sendMail(emailData);
+        return user;
+      } catch (err) {
+        throw new ErrException({ id: 'fatal_error', description: 'could not send email' });
+      }
     } catch (err) {
       throw new ErrException({ id: 'Value_already_exists', description: 'This value is already set in the database' });
     }
@@ -32,7 +43,7 @@ export default class AuthService {
   static async signin(userInput) {
     const user = await User.getUserByLogin(userInput.login);
     if (user && user.hashpwd === this.hashPwdWithSalt(userInput.password, user.salt)) {
-      return (user);
+      return user;
     }
     if (user) {
       throw new ErrException({ id: 'Password_invalid', description: 'the password entered is different from the one in database' });

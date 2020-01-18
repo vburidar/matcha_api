@@ -14,8 +14,8 @@ function ErrException(rawError) {
 
 function getErrorDictionary() {
   const dict = {
-    '/.+_not_found$/': 404,
-    '/.+_already_exists$/': 409,
+    '/^.+_not_found$/$': 404,
+    '/^.+_already_exists$/': 409,
     '/^.+_already$/': 409,
     '/^.+_invalid$/': 400,
     '/^unauthorized_.+$/': 401,
@@ -43,7 +43,7 @@ function searchStatus(idError) {
 
 function errorHandler(err, req, res, next) {
   console.log('*****ERROR*****');
-  console.log(err);
+  console.log(err.id);
   console.log('Current cookies', req.session.cookie);
   let errStatus = 400;
   if (err.id) {

@@ -16,12 +16,20 @@ async function startServer() {
   EmailService.load();
   PostgresService.load();
 
-  app.use(cors());
+  const corsOptions = {
+    origin: 'http://localhost:3000',
+    credentials: true,
+  };
+  app.use(cors(corsOptions));
   app.use(bodyParser.json());
   const PgSession = PgStore(session);
   app.use(session({
     secret: config.expressSession.secret,
-    cookie: { maxAge: 60000 },
+    cookie: {
+      resave: true,
+      maxAge: 600000,
+      httpOnly: false,
+    },
     saveUninitialized: false,
     resave: false,
     store: new PgSession({

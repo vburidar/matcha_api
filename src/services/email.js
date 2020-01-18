@@ -1,7 +1,6 @@
 import nodemailer from 'nodemailer';
 import config from '../config';
 
-
 export default class EmailService {
   static async load() {
     if (!this.transport) {
@@ -36,7 +35,7 @@ export default class EmailService {
     try {
       await this.transport.sendMail(email);
     } catch (err) {
-      console.log(err);
+      throw new Error('could not send email');
     }
   }
 }

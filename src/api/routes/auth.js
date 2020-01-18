@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import AuthService from '../../services/auth';
 import { requestValidator, rv } from '../middlewares/requestValidator';
-import { errorHandler } from '../middlewares/errorHandler';
+import { errorHandler, ErrException } from '../middlewares/errorHandler';
+
 
 const route = Router();
 
@@ -38,9 +39,10 @@ export default (app) => {
     async (req, res, next) => {
       try {
         const user = await AuthService.signin(req.body);
-        if (user) {
-          req.session.connected = true;
+        if (user && req.session.login === undefined) {
           req.session.login = user.login;
+        } else if (user) {
+          return next(new ErrException({ id: 'user_already_exists' }));
         }
         return res.status(200).send(user);
       } catch (err) {
