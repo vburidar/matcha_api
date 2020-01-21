@@ -42,7 +42,7 @@ export default (app) => {
         if (user && req.session.login === undefined) {
           req.session.login = user.login;
         } else if (user) {
-          return next(new ErrException({ id: 'user_already_exists' }));
+          return next(new ErrException({ id: 'user_logged_already' }));
         }
         return res.status(200).send(user);
       } catch (err) {
@@ -50,6 +50,37 @@ export default (app) => {
       }
     },
   );
+
+  route.post('/accountValidation',
+    async (req, res, next) => {
+      try {
+        const validation = await AuthService.validateAccount(req.body);
+        return res.status(200).send(validation);
+      } catch (err) {
+        return next(err);
+      }
+    });
+
+  route.post('/forgotPwd',
+    async (req, res, next) => {
+      try {
+        const reset = await AuthService.sendResetPwdLink(req.body);
+        return res.status(200).send(reset);
+      } catch (err) {
+        console.log(err);
+        return next(err);
+      }
+    });
+
+  route.post('/resetPwd',
+    async (req, res, next) => {
+      try {
+        const reset = await AuthService.resetPwd(req.body);
+        return res.status(200).send(reset);
+      } catch (err) {
+        return next(err);
+      }
+    });
 
   app.use(errorHandler);
 };

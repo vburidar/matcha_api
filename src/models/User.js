@@ -26,4 +26,39 @@ export default class User {
     );
     return (user.rows[0]);
   }
+
+  static async getUserByEmail(email) {
+    const user = await PostgresService.pool.query(
+      `SELECT
+        *
+      FROM users
+      WHERE
+        Email=$1`,
+      [email],
+    );
+    return (user.rows[0]);
+  }
+
+  static async updateValidate(login) {
+    const validate = await PostgresService.pool.query(
+      `UPDATE
+      users
+      SET validated=$1
+      WHERE login=$2`,
+      [true, login],
+    );
+    return (validate);
+  }
+
+  static async updatePwd(newPwdData, login) {
+    const update = await PostgresService.pool.query(
+      `UPDATE users
+      SET hashpwd = $1,
+      salt = $2
+      WHERE login = $3
+      RETURNING id, login, email`,
+      [newPwdData[0], newPwdData[1], login],
+    );
+    return (update);
+  }
 }

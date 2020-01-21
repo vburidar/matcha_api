@@ -17,7 +17,11 @@ export default class AuthService {
         const emailData = {
           to: userInput.email,
           subject: 'Subscription to Match Point',
-          text: 'Congratulations!</br>You just subscribed to Match Point</br>Connect to your account to start meeting and dating!',
+          html: `Congratulations!<br/>
+          You just subscribed to Match Point<br/>
+          Click on <a href="http://localhost:3000/validateAccount?login=${userInput.login}&code=${this.hashPwdWithSalt(userInput.login, salt)}">
+          this link</a>to validate your account<br/> 
+          Connect to your account to start meeting and dating!`,
         };
         EmailService.sendMail(emailData);
         return user;
@@ -42,13 +46,70 @@ export default class AuthService {
 
   static async signin(userInput) {
     const user = await User.getUserByLogin(userInput.login);
-    if (user && user.hashpwd === this.hashPwdWithSalt(userInput.password, user.salt)) {
+    if (
+      user
+      && user.hashpwd === this.hashPwdWithSalt(userInput.password, user.salt)
+      && user.validated
+    ) {
       return user;
     }
     if (user) {
-      throw new ErrException({ id: 'Password_invalid', description: 'the password entered is different from the one in database' });
+      if (user.validated) {
+        throw new ErrException({ id: 'Password_invalid', description: 'the password entered is different from the one in database' });
+      } else {
+        throw new ErrException({ id: 'Account_not_validated' });
+      }
     } else {
       throw new ErrException({ id: 'Login_invalid', description: 'the login entered does not exist in the database' });
     }
+  }
+
+  static async validateAccount(userInput) {
+    const user = await User.getUserByLogin(userInput.login);
+    console.log(this.hashPwdWithSalt(user.login, user.salt));
+    console.log(userInput.code);
+    if (user && this.hashPwdWithSalt(user.login, user.salt) === userInput.code) {
+      const validated = await User.updateValidate(userInput.login);
+      return validated;
+    }
+    if (user) {
+      throw new ErrException({ id: 'validation_code_invalid' });
+    }
+    throw new ErrException({ id: 'login_invalid' });
+  }
+
+  static async sendResetPwdLink(userInput) {
+    const user = await User.getUserByEmail(userInput.email);
+    if (user) {
+      try {
+        const emailData = {
+          to: userInput.email,
+          subject: 'Reset your Match Point password',
+          html: `${`Hello!<br/>
+          You can reset your password <a href=http://localhost:3000/resetPwd?login=`}${user.login}&code=${this.hashPwdWithSalt(userInput.email, user.salt)}>
+          here</a>! 
+          See you soon on MatchPoint!`,
+        };
+        EmailService.sendMail(emailData);
+        return user;
+      } catch (err) {
+        throw new ErrException({ id: 'fatal_error', description: 'could not send email' });
+      }
+    } else throw new ErrException({ id: 'Email_invalid' });
+  }
+
+  static async resetPwd(userInput) {
+    const user = await User.getUserByLogin(userInput.login);
+    if (user && this.hashPwdWithSalt(user.email, user.salt) === userInput.code) {
+      try {
+        const newPwdData = this.hashPwd(userInput.password);
+        const changePwd = await User.updatePwd(newPwdData, userInput.login);
+        return changePwd;
+      } catch (err) {
+        console.log(err);
+        throw new ErrException({ id: 'db_update_failure' });
+      }
+    }
+    throw new ErrException({ id: 'login_invalid' });
   }
 }

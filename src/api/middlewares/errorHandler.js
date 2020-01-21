@@ -42,7 +42,9 @@ function searchStatus(idError) {
 }
 
 function errorHandler(err, req, res, next) {
+  const dateError = new Date(Date.now());
   console.log('*****ERROR*****');
+  console.log(dateError.toUTCString());
   console.log(err.id);
   console.log('Current cookies', req.session.cookie);
   let errStatus = 400;
