@@ -25,12 +25,12 @@ export default class EmailService {
     }
   }
 
-  static async sendMail({ to, subject, text }) {
+  static async sendMail({ to, subject, html }) {
     const email = {
       from: config.smtp.user,
       to,
       subject,
-      text,
+      html,
     };
 
     try {
