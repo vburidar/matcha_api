@@ -31,4 +31,17 @@ export default (app) => {
       }
     },
   );
+
+  route.post(
+    '/populate',
+    async (req, res, next) => {
+      try {
+        DbService.populateDatabase();
+        return res.status(200).send('SUCCESS');
+      } catch (err) {
+        console.log(err);
+        return next(err);
+      }
+    },
+  );
 };

@@ -1,5 +1,8 @@
 import { Client } from 'pg';
+import crypto from 'crypto';
 import config from '../config';
+import { names, surnamesWoman, surnamesMan } from '../../populate_data/populate';
+
 
 const client = new Client({
   user: config.postgres.user,
@@ -103,5 +106,62 @@ export default class DbService {
       
       CREATE INDEX "IDX_sessions_expire" ON "sessions" ("expire")`);
     console.log('SETUP DONE');
+  }
+
+  static populateDatabase() {
+    function randomDate(dateStart, dateEnd) {
+      function randomValueBetween(min, max) {
+        return Math.random() * (max - min) + min;
+      }
+      let date1 = dateStart || '01-01-1970';
+      let date2 = dateEnd || new Date().toLocaleDateString();
+      date1 = new Date(date1).getTime();
+      date2 = new Date(date2).getTime();
+      if (date1 > date2) {
+        return new Date(randomValueBetween(date2, date1)).toLocaleDateString();
+      }
+      return new Date(randomValueBetween(date1, date2)).toLocaleDateString();
+    }
+    function hashPwd(rawPwd) {
+      const salt = crypto.randomBytes(Math.ceil(8)).toString('hex').slice(0, 16);
+      const hashedPwd = crypto.createHash('whirlpool').update(rawPwd + salt).digest('hex');
+      return ([hashedPwd, salt]);
+    }
+    function userExists(surname, name) {
+      const user = client.query('SELECT login FROM users WHERE surname = $1 AND name = $2', [surname, name]);
+      if (user.row !== undefined) {
+        console.log('DOUBLON');
+        return (1);
+      }
+      return (0);
+    }
+    console.log(surnamesMan);
+    let compteur = 0;
+    let tmpName = 'empty';
+    let tmpSurname = '';
+    let tmpBirthdate = '';
+    let pwdData = [];
+    let genreId = 0;
+    const tabGenre = ['man', 'woman'];
+    while (compteur < 500) {
+      pwdData = hashPwd('Qwerty123');
+      genreId = Math.floor(Math.random() * 2);
+      while (tmpName === 'empty' || userExists(tmpSurname, tmpName)) {
+        tmpName = names[Math.floor(Math.random() * names.length)];
+        if (genreId === 1) {
+          tmpSurname = surnamesWoman[Math.floor(Math.random() * surnamesWoman.length)];
+        } else {
+          tmpSurname = surnamesMan[Math.floor(Math.random() * surnamesMan.length)];
+        }
+      }
+      tmpBirthdate = randomDate('01/01/1988', '01/01/1998');
+      client.query(`INSERT INTO 
+      users 
+      (login, hashPwd, salt, email, surname, name, genre, birthdate, validated) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [`${tmpSurname}_${tmpName}`, pwdData[0], pwdData[1], `${tmpSurname}_${tmpName}@yopmail.com`, tmpSurname, tmpName, tabGenre[genreId], tmpBirthdate, true]);
+      compteur += 1;
+      tmpName = 'empty';
+    }
   }
 }
