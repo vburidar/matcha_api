@@ -72,6 +72,16 @@ export default (app) => {
       }
     });
 
+  route.post('/testLinkResetPwd',
+    async (req, res, next) => {
+      try {
+        const testLink = await AuthService.testLink(req.body);
+        return res.status(200).send('valid_link');
+      } catch (err) {
+        return next(err);
+      }
+    });
+
   route.post('/resetPwd',
     async (req, res, next) => {
       try {

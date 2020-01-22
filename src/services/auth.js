@@ -112,4 +112,12 @@ export default class AuthService {
     }
     throw new ErrException({ id: 'login_invalid' });
   }
+
+  static async testLink(userInput) {
+    const user = await User.getUserByLogin(userInput.login);
+    if (user && this.hashPwdWithSalt(user.email, user.salt) === userInput.code) {
+      return ('valid_link');
+    }
+    throw new ErrException({ id: 'reset_pwd_link_invalid' });
+  }
 }
