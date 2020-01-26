@@ -92,5 +92,13 @@ export default (app) => {
       }
     });
 
+  route.post('/ping',
+    async (req, res, next) => {
+      if (req.session.login) {
+        return (res.status(200).send({ message: 'in_session', login: req.session.login }));
+      }
+      return (res.status(200).send( { message: 'not_in_session' }));
+    });
+
   app.use(errorHandler);
 };

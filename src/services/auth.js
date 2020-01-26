@@ -86,7 +86,7 @@ export default class AuthService {
           to: userInput.email,
           subject: 'Reset your Match Point password',
           html: `${`Hello!<br/>
-          You can reset your password <a href=http://localhost:3000/resetPwd?login=`}${user.login}&code=${this.hashPwdWithSalt(userInput.email, user.salt)}>
+          You can reset your password <a href=http://localhost:3000/resetPwd/`}${user.login}/${this.hashPwdWithSalt(userInput.email, user.salt)}>
           here</a>! 
           See you soon on MatchPoint!`,
         };
