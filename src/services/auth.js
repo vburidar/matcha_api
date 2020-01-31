@@ -55,12 +55,12 @@ export default class AuthService {
     }
     if (user) {
       if (user.validated) {
-        throw new ErrException({ id: 'Password_invalid', description: 'the password entered is different from the one in database' });
+        throw new ErrException({ id: 'password_invalid', description: 'the password entered is different from the one in database' });
       } else {
-        throw new ErrException({ id: 'Account_not_validated' });
+        throw new ErrException({ id: 'account_not_validated' });
       }
     } else {
-      throw new ErrException({ id: 'Login_invalid', description: 'the login entered does not exist in the database' });
+      throw new ErrException({ id: 'login_invalid', description: 'the login entered does not exist in the database' });
     }
   }
 
@@ -95,7 +95,7 @@ export default class AuthService {
       } catch (err) {
         throw new ErrException({ id: 'fatal_error', description: 'could not send email' });
       }
-    } else throw new ErrException({ id: 'Email_invalid' });
+    } else throw new ErrException({ id: 'email_invalid' });
   }
 
   static async resetPwd(userInput) {
