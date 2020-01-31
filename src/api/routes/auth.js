@@ -40,6 +40,7 @@ export default (app) => {
       try {
         const user = await AuthService.signin(req.body);
         if (user && req.session.login === undefined) {
+          console.log('initializing session');
           req.session.login = user.login;
         } else if (user) {
           return next(new ErrException({ id: 'user_logged_already' }));
@@ -94,10 +95,22 @@ export default (app) => {
 
   route.post('/ping',
     async (req, res, next) => {
+      console.log(req.session);
       if (req.session.login) {
         return (res.status(200).send({ message: 'in_session', login: req.session.login }));
       }
-      return (res.status(200).send( { message: 'not_in_session' }));
+      return (res.status(200).send({ message: 'not_in_session' }));
+    });
+
+  route.delete('/deleteSession',
+    async (req, res, next) => {
+      if (req.session.login) {
+        console.log(req.session);
+        req.session.destroy();
+        res.status(200).send('session successfully deleted');
+      } else {
+        res.status(400).send('session_does_not_exist');
+      }
     });
 
   app.use(errorHandler);

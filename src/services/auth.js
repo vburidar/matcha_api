@@ -120,4 +120,8 @@ export default class AuthService {
     }
     throw new ErrException({ id: 'reset_pwd_link_invalid' });
   }
+
+  static async deleteSession(req) {
+    req.session.login = undefined;
+  }
 }

@@ -28,7 +28,7 @@ async function startServer() {
     cookie: {
       resave: true,
       maxAge: 600000,
-      httpOnly: false,
+      httpOnly: true,
     },
     saveUninitialized: false,
     resave: false,
