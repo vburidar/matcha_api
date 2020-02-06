@@ -1,7 +1,10 @@
+import fs from 'fs';
 import { Client } from 'pg';
-import crypto from 'crypto';
+import crypto, { createPublicKey } from 'crypto';
 import config from '../config';
-import { names, surnamesWoman, surnamesMan } from '../../populate_data/populate';
+import {
+  names, surnamesWoman, surnamesMan, interests, locations,
+} from '../../populate_data/populate';
 
 
 const client = new Client({
@@ -108,7 +111,7 @@ export default class DbService {
     console.log('SETUP DONE');
   }
 
-  static populateDatabase() {
+  static async populateDatabase() {
     function randomDate(dateStart, dateEnd) {
       function randomValueBetween(min, max) {
         return Math.random() * (max - min) + min;
@@ -127,26 +130,87 @@ export default class DbService {
       const hashedPwd = crypto.createHash('whirlpool').update(rawPwd + salt).digest('hex');
       return ([hashedPwd, salt]);
     }
-    function userExists(surname, name) {
-      const user = client.query('SELECT login FROM users WHERE surname = $1 AND name = $2', [surname, name]);
-      if (user.row !== undefined) {
-        console.log('DOUBLON');
-        return (1);
+    async function userExists(surname, name) {
+      const user = await client.query('SELECT login FROM users WHERE surname=$1 AND name=$2', [surname, name]);
+      if (user.rows[0]) {
+        return (true);
       }
-      return (0);
+      return (false);
     }
-    console.log(surnamesMan);
-    let compteur = 0;
-    let tmpName = 'empty';
-    let tmpSurname = '';
-    let tmpBirthdate = '';
-    let pwdData = [];
-    let genreId = 0;
-    const tabGenre = ['man', 'woman'];
-    while (compteur < 500) {
-      pwdData = hashPwd('Qwerty123');
+
+    async function getUserId(surname, name) {
+      const resp = await client.query('SELECT id FROM users WHERE surname=$1 AND name=$2', [surname, name]);
+      return (resp.rows[0].id);
+    }
+
+    async function createInterests(userId) {
+      const resp = await client.query('SELECT id FROM interests');
+      const nbInsert = 3 + Math.floor(Math.random() * 5);
+      let compteur = 0;
+      while (compteur < nbInsert) {
+        const id = Math.floor(Math.random() * resp.rows.length);
+        client.query('INSERT INTO users_interests (id_users, id_interests) VALUES ($1, $2)', [userId, resp.rows[id].id]);
+        compteur += 1;
+      }
+    }
+
+    async function createPic(userId) {
+      const imageId = Math.floor(Math.random() * 1000) + 1;
+      const path = `https://i.picsum.photos/id/${imageId}/500/500.jpg`;
+      const resp = await client.query('INSERT INTO images (path) VALUES ($1) RETURNING id', [path]);
+      client.query('INSERT INTO users_images (id_users, id_images, is_profile) VALUES ($1, $2, $3)', [userId, resp.rows[0].id, true]);
+    }
+    function getLocation() {
+      const randomPopulation = Math.random();
+      const randomLatitude = Math.random();
+      const randomLongitude = Math.random();
+      const matchingCity = locations.filter((location) => location.population > randomPopulation)[0];
+      const latitude = matchingCity.center.latitude + (randomLatitude * 2 - 1) * (matchingCity.radius / 111.12);
+      const longitude = matchingCity.center.longitude + (randomLongitude * 2 - 1) * (matchingCity.radius / 111.12);
+      return { latitude, longitude };
+    }
+
+    function createLocation(userId) {
+      const location = getLocation();
+      client.query(`INSERT INTO localisations 
+      (id_users, latitude, longitude, is_active, name) 
+      VALUES ($1, $2, $3, $4, $5)`, [userId, location.latitude, location.longitude, true, 'home']);
+    }
+
+    async function getSuggestionList(userId) {
+      const resp = await client.query(`SELECT * 
+      FROM interests 
+      INNER JOIN users_interests 
+      ON interests.id = users_interests.id_interests
+      WHERE users_interests.id_users = $1`, [userId]);
+      console.log('resp = ', resp);
+      Object.keys(resp.rows).forEach(async (key) => {
+        const respFindCommonInterests = await client.query(`SELECT id_users
+        FROM users_interests
+        WHERE id_interests = $1
+        AND id_users != $2`, [resp.rows[key].id, userId]);
+        console.log('Common Interests', respFindCommonInterests);
+      });
+    }
+
+    async function getAllUsersId() {
+      const resp = await client.query('SELECT id FROM users');
+      console.log('resp=', resp);
+      return (resp.rows);
+    }
+
+    async function createUser() {
+      let tmpName = 'empty';
+      let tmpSurname = '';
+      let tmpBirthdate = '';
+      let pwdData = [];
+      let genreId = 0;
+      let test = false;
+      const tabGenre = ['man', 'woman']; pwdData = hashPwd('Qwerty123');
+      tmpBirthdate = randomDate('01/01/1988', '01/01/1998');
       genreId = Math.floor(Math.random() * 2);
-      while (tmpName === 'empty' || userExists(tmpSurname, tmpName)) {
+      while (tmpName === 'empty' || test === false) {
+        test = true;
         tmpName = names[Math.floor(Math.random() * names.length)];
         if (genreId === 1) {
           tmpSurname = surnamesWoman[Math.floor(Math.random() * surnamesWoman.length)];
@@ -154,14 +218,38 @@ export default class DbService {
           tmpSurname = surnamesMan[Math.floor(Math.random() * surnamesMan.length)];
         }
       }
-      tmpBirthdate = randomDate('01/01/1988', '01/01/1998');
-      client.query(`INSERT INTO 
+      try {
+        await client.query(`INSERT INTO 
       users 
-      (login, hashPwd, salt, email, surname, name, genre, birthdate, validated) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [`${tmpSurname}_${tmpName}`, pwdData[0], pwdData[1], `${tmpSurname}_${tmpName}@yopmail.com`, tmpSurname, tmpName, tabGenre[genreId], tmpBirthdate, true]);
+      (login, hashPwd, salt, email, surname, name, genre, birthdate, validated, description, sexual_preference) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        [`${tmpSurname}_${tmpName}`, pwdData[0], pwdData[1], `${tmpSurname}_${tmpName}@yopmail.com`, tmpSurname, tmpName, tabGenre[genreId], tmpBirthdate, true, 'beep bop I\'m a bot', 1 + Math.floor(Math.random() * 3)]);
+        const userId = await getUserId(tmpSurname, tmpName);
+        await createInterests(userId);
+        await createLocation(userId);
+        await createPic(userId, genreId);
+      } catch (err) {
+        test = false;
+      }
+    }
+
+    let compteur = 0;
+    Object.keys(interests).forEach((key) => {
+      client.query('INSERT INTO interests (name) VALUES ($1)', [interests[key]]);
+    });
+    async function toto() {
+      while (compteur < 10) {
+        createUser(compteur);
+        compteur += 1;
+      }
+    }
+    await toto();
+    compteur = 0;
+    const userId = await getAllUsersId();
+    console.log('here', userId);
+    while (compteur < userId.length) {
+      getSuggestionList(userId[compteur].id);
       compteur += 1;
-      tmpName = 'empty';
     }
   }
 }

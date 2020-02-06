@@ -19,7 +19,7 @@ export default class AuthService {
           subject: 'Subscription to Match Point',
           html: `Congratulations!<br/>
           You just subscribed to Match Point<br/>
-          Click on <a href="http://localhost:3000/validateAccount?login=${userInput.login}&code=${this.hashPwdWithSalt(userInput.login, salt)}">
+          Click on <a href="http://localhost:3000/validateAccount/${userInput.login}/${this.hashPwdWithSalt(userInput.login, salt)}">
           this link</a>to validate your account<br/> 
           Connect to your account to start meeting and dating!`,
         };
@@ -29,7 +29,7 @@ export default class AuthService {
         throw new ErrException({ id: 'fatal_error', description: 'could not send email' });
       }
     } catch (err) {
-      throw new ErrException({ id: 'Value_already_exists', description: 'This value is already set in the database' });
+      throw new ErrException({ id: 'value_already_exist', description: 'This value is already set in the database' });
     }
   }
 
