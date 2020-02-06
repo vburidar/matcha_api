@@ -9,6 +9,7 @@ import config from './config';
 
 import EmailService from './services/email';
 import PostgresService from './services/postgres';
+import startJobs from './jobs';
 
 async function startServer() {
   const app = express();
@@ -39,6 +40,8 @@ async function startServer() {
   }));
 
   app.use(config.api.prefix, routes());
+
+  startJobs();
 
   app.listen(config.port, () => {
     console.log(`Server started on port ${config.port}`);
