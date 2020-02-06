@@ -13,4 +13,34 @@ export default class PostgresService {
       });
     }
   }
+
+  static async createTransaction() {
+    this.client = await this.pool.connect();
+    this.transactions = {};
+    await this.client.query('BEGIN');
+  }
+
+  static async addQueryToTransaction(queryText, params, queryName = '') {
+    const result = await this.client.query(queryText, params);
+    if (queryName !== '') {
+      this.transactions[queryName] = result;
+    }
+    return result;
+  }
+
+  static getQueryResult(queryName) {
+    return this.transactions[queryName];
+  }
+
+  static async commitTransaction() {
+    try {
+      await this.client.query('COMMIT');
+    } catch (err) {
+      await this.client.query('ROLLBACK');
+      throw err;
+    } finally {
+      this.client.release();
+      this.transactions = {};
+    }
+  }
 }
