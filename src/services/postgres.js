@@ -20,10 +20,16 @@ export default class PostgresService {
     await this.client.query('BEGIN');
   }
 
-  static async addQueryToTransaction(queryText, params, queryName = '') {
-    const result = await this.client.query(queryText, params);
-    if (queryName !== '') {
-      this.transactions[queryName] = result;
+  static async query(queryText, params, inTransaction = false, queryName = '') {
+    let result;
+    if (inTransaction) {
+      if (!this.client) throw new Error('internal_server');
+      result = await this.client.query(queryText, params);
+      if (queryName !== '') {
+        this.transactions[queryName] = result;
+      }
+    } else {
+      result = await this.pool.query(queryText, params);
     }
     return result;
   }

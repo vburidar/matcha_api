@@ -53,9 +53,10 @@ import PostgresService from '../../services/postgres';
 try {
   await PostgresService.createTransaction();
 
-  const ret = await PostgresService.addQueryToTransaction(
+  const ret = await PostgresService.query(
     'INSERT INTO users (login, hashpwd, salt, email) VALUES($1, $2, $3, $4) RETURNING *',
     ['toto', 'xxx', 'xxx', 'toto@gmail.com'],
+    true // inTransaction, default to false
   );
 
   await PostgresService.commitTransaction();
@@ -68,11 +69,12 @@ try {
 
 The transaction manager can keep the queries returns for you, so that you can add queries to the transaction from multiple files easily.
 
-To do that, just add an optional third parameter to `addQueryToTransaction`:
+To do that, just add an optional fourth parameter to `query`:
 ```js
-  const ret = await PostgresService.addQueryToTransaction(
+  const ret = await PostgresService.query(
     'INSERT INTO users (login, hashpwd, salt, email) VALUES($1, $2, $3, $4) RETURNING *',
     ['toto', 'xxx', 'xxx', 'toto@gmail.com'],
+    true, // inTransaction
     'addToto', // Name to identify the query
   );
 ```
