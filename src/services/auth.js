@@ -19,7 +19,7 @@ export default class AuthService {
           subject: 'Subscription to Match Point',
           html: `Congratulations!<br/>
           You just subscribed to Match Point<br/>
-          Click on <a href="http://localhost:3000/validateAccount?login=${userInput.login}&code=${this.hashPwdWithSalt(userInput.login, salt)}">
+          Click on <a href="http://localhost:3000/validateAccount/${userInput.login}/${this.hashPwdWithSalt(userInput.login, salt)}">
           this link</a>to validate your account<br/> 
           Connect to your account to start meeting and dating!`,
         };
@@ -29,7 +29,7 @@ export default class AuthService {
         throw new ErrException({ id: 'fatal_error', description: 'could not send email' });
       }
     } catch (err) {
-      throw new ErrException({ id: 'Value_already_exists', description: 'This value is already set in the database' });
+      throw new ErrException({ id: 'value_already_exist', description: 'This value is already set in the database' });
     }
   }
 
@@ -48,19 +48,19 @@ export default class AuthService {
     const user = await User.getUserByLogin(userInput.login);
     if (
       user
-      && user.hashpwd === this.hashPwdWithSalt(userInput.password, user.salt)
+      && user.password === this.hashPwdWithSalt(userInput.password, user.salt)
       && user.validated
     ) {
       return user;
     }
     if (user) {
       if (user.validated) {
-        throw new ErrException({ id: 'Password_invalid', description: 'the password entered is different from the one in database' });
+        throw new ErrException({ id: 'password_invalid', description: 'the password entered is different from the one in database' });
       } else {
-        throw new ErrException({ id: 'Account_not_validated' });
+        throw new ErrException({ id: 'account_not_validated' });
       }
     } else {
-      throw new ErrException({ id: 'Login_invalid', description: 'the login entered does not exist in the database' });
+      throw new ErrException({ id: 'login_invalid', description: 'the login entered does not exist in the database' });
     }
   }
 
@@ -95,7 +95,7 @@ export default class AuthService {
       } catch (err) {
         throw new ErrException({ id: 'fatal_error', description: 'could not send email' });
       }
-    } else throw new ErrException({ id: 'Email_invalid' });
+    } else throw new ErrException({ id: 'email_invalid' });
   }
 
   static async resetPwd(userInput) {
