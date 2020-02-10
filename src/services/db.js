@@ -130,13 +130,6 @@ export default class DbService {
       const hashedPwd = crypto.createHash('whirlpool').update(rawPwd + salt).digest('hex');
       return ([hashedPwd, salt]);
     }
-    async function userExists(surname, name) {
-      const user = await client.query('SELECT login FROM users WHERE surname=$1 AND name=$2', [surname, name]);
-      if (user.rows[0]) {
-        return (true);
-      }
-      return (false);
-    }
 
     async function getUserId(surname, name) {
       const resp = await client.query('SELECT id FROM users WHERE surname=$1 AND name=$2', [surname, name]);
@@ -149,7 +142,7 @@ export default class DbService {
       let compteur = 0;
       while (compteur < nbInsert) {
         const id = Math.floor(Math.random() * resp.rows.length);
-        client.query('INSERT INTO users_interests (id_users, id_interests) VALUES ($1, $2)', [userId, resp.rows[id].id]);
+        await client.query('INSERT INTO users_interests (id_users, id_interests) VALUES ($1, $2)', [userId, resp.rows[id].id]);
         compteur += 1;
       }
     }
@@ -158,44 +151,97 @@ export default class DbService {
       const imageId = Math.floor(Math.random() * 1000) + 1;
       const path = `https://i.picsum.photos/id/${imageId}/500/500.jpg`;
       const resp = await client.query('INSERT INTO images (path) VALUES ($1) RETURNING id', [path]);
-      client.query('INSERT INTO users_images (id_users, id_images, is_profile) VALUES ($1, $2, $3)', [userId, resp.rows[0].id, true]);
+      await client.query('INSERT INTO users_images (id_users, id_images, is_profile) VALUES ($1, $2, $3)', [userId, resp.rows[0].id, true]);
     }
-    function getLocation() {
+    async function getLocation() {
       const randomPopulation = Math.random();
       const randomLatitude = Math.random();
       const randomLongitude = Math.random();
       const matchingCity = locations.filter((location) => location.population > randomPopulation)[0];
       const latitude = matchingCity.center.latitude + (randomLatitude * 2 - 1) * (matchingCity.radius / 111.12);
       const longitude = matchingCity.center.longitude + (randomLongitude * 2 - 1) * (matchingCity.radius / 111.12);
-      return { latitude, longitude };
+      return { latitude, longitude, name: matchingCity.name };
     }
 
-    function createLocation(userId) {
-      const location = getLocation();
-      client.query(`INSERT INTO localisations 
+    async function createLocation(userId) {
+      const location = await getLocation();
+      await client.query(`INSERT INTO localisations 
       (id_users, latitude, longitude, is_active, name) 
-      VALUES ($1, $2, $3, $4, $5)`, [userId, location.latitude, location.longitude, true, 'home']);
+      VALUES ($1, $2, $3, $4, $5)`, [userId, location.latitude, location.longitude, true, location.name]);
+    }
+
+    async function multifactorMatching(userId, userLat, userLong, nbInterests, userAge, userPref, userGenre) {
+      const suggestionList = await client.query(`SELECT interests.id_users, 
+      interests.common_interests, 
+      localisations.distance,
+      users.genre AS genreReceiver,
+      users.sexual_preference::bit(4) AS prefReceiver,
+      $7 as GenreSender,
+      $6::int as prefSender,
+      abs($5 - EXTRACT (YEAR FROM AGE(users.birthdate))) as age_difference,
+      log(1 + 1.7 * (common_interests::float / $4)) AS score_interest,
+      1 / (exp(abs($5 - EXTRACT (YEAR FROM AGE(users.birthdate)))/10)) as score_age,
+      1 / (exp(distance / 10)) AS score_distance,
+      log(1 + 1.7 * (common_interests::float / $4)) + 1 / (exp(abs($5 - EXTRACT (YEAR FROM AGE(users.birthdate)))/10)) + 1 / (exp(distance / 10)) AS score
+      FROM users
+      INNER JOIN
+      (SELECT id_users, 
+        111 * |/((latitude - $2)^2+ (longitude - $3)^2) AS distance 
+        FROM localisations) AS localisations
+        ON localisations.id_users = users.id
+      INNER JOIN 
+      (SELECT id_users, COUNT (*) AS common_interests
+      FROM (
+        SELECT  * 
+        FROM users_interests
+        WHERE id_users != $1) AS test1
+      INNER JOIN
+      (SELECT 
+      id_interests 
+      FROM users_interests 
+      WHERE id_users = $1) AS test2
+      ON test1.id_interests = test2.id_interests
+      GROUP BY id_users) AS interests
+      ON localisations.id_users = interests.id_users
+      WHERE localisations.distance < 20
+      AND(
+        (users.genre = 'man' AND $6 & 1 = 1
+        OR users.genre = 'woman' AND $6 & 2 = 2)
+        AND 
+        ($7 = 'man' AND users.sexual_preference & 1 = 1
+        OR $7 = 'woman' AND users.sexual_preference & 2 = 2)
+      )
+      ORDER BY score DESC`, [userId, userLat, userLong, nbInterests, userAge, userPref, userGenre]);
+      console.log(suggestionList.rows);
+      return (suggestionList);
+    }
+
+    async function generateLikes(list, userId) {
+      const arr = [];
+      const nbLikeSent = Math.ceil(list.rows.length / 10);
+      //console.log('user', userId, 'sent', nbLikeSent, 'likes on', list.rows.length, 'suggestions');
+      while (arr.length < nbLikeSent) {
+        const r = Math.floor(Math.random() * list.rows.length);
+        if (arr.indexOf(r) === -1) arr.push(r);
+      }
+      let compteur = 0;
+      while (compteur < arr.length) {
+        await client.query('INSERT INTO likes (id_sender, id_receiver) VALUES ($1, $2)', [userId, list.rows[arr[compteur]].id_users]);
+        compteur += 1;
+      }
     }
 
     async function getSuggestionList(userId) {
-      const resp = await client.query(`SELECT * 
-      FROM interests 
-      INNER JOIN users_interests 
-      ON interests.id = users_interests.id_interests
-      WHERE users_interests.id_users = $1`, [userId]);
-      console.log('resp = ', resp);
-      Object.keys(resp.rows).forEach(async (key) => {
-        const respFindCommonInterests = await client.query(`SELECT id_users
-        FROM users_interests
-        WHERE id_interests = $1
-        AND id_users != $2`, [resp.rows[key].id, userId]);
-        console.log('Common Interests', respFindCommonInterests);
-      });
+      const ownLoc = await client.query('SELECT * FROM localisations WHERE id_users = $1', [userId]);
+      const interest = await client.query('SELECT * FROM users_interests WHERE id_users = $1', [userId]);
+      const age = await client.query('SELECT EXTRACT (YEAR FROM AGE(birthdate)) AS age FROM users WHERE id = $1', [userId]);
+      const pref = await client.query('SELECT sexual_preference, genre FROM users WHERE id = $1', [userId]);
+      const list = await multifactorMatching(userId, ownLoc.rows[0].latitude, ownLoc.rows[0].longitude, interest.rows.length, age.rows[0].age, pref.rows[0].sexual_preference, pref.rows[0].genre);
+      generateLikes(list, userId);
     }
 
     async function getAllUsersId() {
       const resp = await client.query('SELECT id FROM users');
-      console.log('resp=', resp);
       return (resp.rows);
     }
 
@@ -234,19 +280,15 @@ export default class DbService {
     }
 
     let compteur = 0;
-    Object.keys(interests).forEach((key) => {
-      client.query('INSERT INTO interests (name) VALUES ($1)', [interests[key]]);
+    Object.keys(interests).forEach(async (key) => {
+      await client.query('INSERT INTO interests (name) VALUES ($1)', [interests[key]]);
     });
-    async function toto() {
-      while (compteur < 10) {
-        createUser(compteur);
-        compteur += 1;
-      }
+    while (compteur < 100) {
+      await createUser(compteur);
+      compteur += 1;
     }
-    await toto();
     compteur = 0;
     const userId = await getAllUsersId();
-    console.log('here', userId);
     while (compteur < userId.length) {
       getSuggestionList(userId[compteur].id);
       compteur += 1;
