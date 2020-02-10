@@ -1001,7 +1001,7 @@ const names = [
   'VANG',
 ];
 
-const surnamesWoman = [
+const firstNamesWoman = [
   'Emma',
   'Olivia',
   'Ava',
@@ -1054,7 +1054,7 @@ const surnamesWoman = [
   'Skylar',
 ];
 
-const surnamesMan = [
+const firstNamesMan = [
   'Liam',
   'Noah',
   'William',
@@ -1567,5 +1567,5 @@ const locations = [
 ];
 
 export {
-  names, surnamesWoman, surnamesMan, interests, locations,
+  names, firstNamesWoman, firstNamesMan, interests, locations,
 };

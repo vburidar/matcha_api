@@ -4,7 +4,7 @@ import PostgresService from '../services/postgres';
 export default class User {
   static async create(login, hashedPassword, salt, email) {
     const user = await PostgresService.pool.query(
-      'INSERT INTO users (login, hashpwd, salt, email) VALUES ($1, $2, $3, $4) RETURNING id, login, email',
+      'INSERT INTO users (login, password, salt, email) VALUES ($1, $2, $3, $4) RETURNING id, login, email',
       [
         login,
         hashedPassword,
@@ -53,7 +53,7 @@ export default class User {
   static async updatePwd(newPwdData, login) {
     const update = await PostgresService.pool.query(
       `UPDATE users
-      SET hashpwd = $1,
+      SET password = $1,
       salt = $2
       WHERE login = $3
       RETURNING id, login, email`,

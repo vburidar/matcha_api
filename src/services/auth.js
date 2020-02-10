@@ -48,7 +48,7 @@ export default class AuthService {
     const user = await User.getUserByLogin(userInput.login);
     if (
       user
-      && user.hashpwd === this.hashPwdWithSalt(userInput.password, user.salt)
+      && user.password === this.hashPwdWithSalt(userInput.password, user.salt)
       && user.validated
     ) {
       return user;
