@@ -283,7 +283,7 @@ export default class DbService {
     Object.keys(interests).forEach(async (key) => {
       await client.query('INSERT INTO interests (name) VALUES ($1)', [interests[key]]);
     });
-    while (compteur < 100) {
+    while (compteur < 1000) {
       await createUser(compteur);
       compteur += 1;
     }
