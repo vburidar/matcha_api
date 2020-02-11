@@ -9,6 +9,18 @@ export default class UserService {
       const list = await User.getSuggestionList(user.rows[0]);
       return (list);
     } catch (err) {
+      console.log(err);
+      throw new ErrException({ id: 'fatal_error', description: 'could not fetch list of suggestions' });
+    }
+  }
+
+  static async getProfileInfo(visitedId, visitorId) {
+    try {
+      const visitor = await User.getUserCompleteInfo(visitorId);
+      const user = await User.getProfileCompleteInfo(visitedId, visitor.rows[0]);
+      return (user);
+    } catch (err) {
+      console.log(err);
       throw new ErrException({ id: 'fatal_error', description: 'could not fetch list of suggestions' });
     }
   }
