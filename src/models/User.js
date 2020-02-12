@@ -72,6 +72,8 @@ export default class User {
         images.path,
         locations.latitude,
         locations.longitude,
+        CASE WHEN received_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visited_liked,
+        CASE WHEN sent_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visitor_liked,
         111 * |/((latitude - $2)^2 + (longitude - $3)^2) AS distance,
         users_interests.nb_interests AS nb_interests,
         users_interests.list_interests,
@@ -94,10 +96,18 @@ export default class User {
           ) AS users_interests
       
       ON users.id = users_interests.user_id
+
+      FULL OUTER JOIN 
+        (SELECT * FROM likes WHERE sender_id = $4 AND receiver_id = $1) AS sent_like
+      ON sent_like.receiver_id = users.id
+
+      FULL OUTER JOIN 
+        (SELECT * FROM likes WHERE sender_id = $1 AND receiver_id = $4) AS received_like
+      ON received_like.sender_id = users.id
       
       INNER JOIN images
       ON users.id = images.user_id
-      WHERE users.id = $1`, [visitedId, visitor.latitude, visitor.longitude],
+      WHERE users.id = $1`, [visitedId, visitor.latitude, visitor.longitude, visitor.id],
     );
     return (profile);
   }
