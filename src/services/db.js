@@ -39,6 +39,7 @@ export default class DbService {
     this.resetDatabase();
     console.log('CREATING TYPES AND TABLES');
     client.query('CREATE TYPE notification AS ENUM(\'message\', \'like\', \'unlike\', \'visit\', \'match\')');
+    client.query('CREATE TYPE report AS ENUM(\'fraud\', \'harassment\', \'identity_theft\')');
     client.query(`CREATE TABLE users (
       id serial PRIMARY KEY NOT NULL,
       login varchar(64) UNIQUE NOT NULL,
@@ -70,6 +71,7 @@ export default class DbService {
     client.query(`CREATE TABLE reports (
       sender_id integer REFERENCES users(id),
       receiver_id integer REFERENCES users(id),
+      type report NOT NULL,
       PRIMARY KEY (sender_id, receiver_id))`);
     client.query(`CREATE TABLE likes(
       receiver_id integer REFERENCES users(id),

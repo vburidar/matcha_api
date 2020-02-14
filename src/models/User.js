@@ -72,8 +72,10 @@ export default class User {
         images.path,
         locations.latitude,
         locations.longitude,
-        CASE WHEN received_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visited_liked,
-        CASE WHEN sent_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visitor_liked,
+        CASE WHEN visitor_received_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visited_liked_visitor,
+        CASE WHEN visitor_received_block.sender_id IS NULL THEN FALSE ELSE TRUE END as visited_blocked_visitor,
+        CASE WHEN visitor_sent_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visitor_liked_visited,
+        CASE WHEN visitor_sent_block.sender_id IS NULL THEN FALSE ELSE TRUE END as visitor_blocked_visited,
         111 * |/((latitude - $2)^2 + (longitude - $3)^2) AS distance,
         users_interests.nb_interests AS nb_interests,
         users_interests.list_interests,
@@ -98,17 +100,25 @@ export default class User {
       ON users.id = users_interests.user_id
 
       FULL OUTER JOIN 
-        (SELECT * FROM likes WHERE sender_id = $4 AND receiver_id = $1) AS sent_like
-      ON sent_like.receiver_id = users.id
+        (SELECT * FROM likes WHERE sender_id = $4 AND receiver_id = $1) AS visitor_sent_like
+      ON visitor_sent_like.receiver_id = users.id
 
       FULL OUTER JOIN 
-        (SELECT * FROM likes WHERE sender_id = $1 AND receiver_id = $4) AS received_like
-      ON received_like.sender_id = users.id
+        (SELECT * FROM blocks WHERE sender_id = $4 AND receiver_id = $1) AS visitor_sent_block
+      ON visitor_sent_block.receiver_id = users.id
+
+      FULL OUTER JOIN 
+        (SELECT * FROM likes WHERE sender_id = $1 AND receiver_id = $4) AS visitor_received_like
+      ON visitor_received_like.sender_id = users.id
+
+      FULL OUTER JOIN
+        (SELECT * FROM blocks WHERE sender_id = $1 AND receiver_id = $4) AS visitor_received_block
+      ON visitor_received_block.sender_id = users.id
       
       INNER JOIN images
       ON users.id = images.user_id
-      WHERE users.id = $1`, [visitedId, visitor.latitude, visitor.longitude, visitor.id],
-    );
+      WHERE users.id = $1`, [visitedId, visitor.latitude, visitor.longitude, visitor.id]);
+    console.log(profile.rows);
     return (profile);
   }
 
@@ -143,9 +153,14 @@ export default class User {
 
   static async getSuggestionList(user) {
     const suggestionList = await PostgresService.pool.query(`
-      SELECT
+      SELECT * FROM (
+        SELECT
       users.first_name,
       EXTRACT (YEAR FROM AGE(users.birthdate)) AS age,
+      CASE WHEN visitor_received_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visited_liked_visitor,
+      CASE WHEN visitor_received_block.sender_id IS NULL THEN FALSE ELSE TRUE END as visited_blocked_visitor,
+      CASE WHEN visitor_sent_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visitor_liked_visited,
+      CASE WHEN visitor_sent_block.sender_id IS NULL THEN FALSE ELSE TRUE END as visitor_blocked_visited,
       interests.user_id,
       interests.common_interests,
       interests.list_interests,
@@ -215,11 +230,31 @@ export default class User {
 
     ON interests_2.user_id = users.id
 
+    FULL OUTER JOIN 
+        (SELECT * FROM likes WHERE sender_id = $1) AS visitor_sent_like
+      ON visitor_sent_like.receiver_id = users.id
+
+    FULL OUTER JOIN 
+        (SELECT * FROM blocks WHERE sender_id = $1) AS visitor_sent_block
+      ON visitor_sent_block.receiver_id = users.id
+
+    FULL OUTER JOIN 
+        (SELECT * FROM likes WHERE receiver_id = $1) AS visitor_received_like
+      ON visitor_received_like.sender_id = users.id
+
+    FULL OUTER JOIN
+        (SELECT * FROM blocks WHERE receiver_id = $1) AS visitor_received_block
+      ON visitor_received_block.sender_id = users.id
+
     WHERE locations.distance < 20
     AND $6 & users.gender != 0
-    AND $7 & users.sexual_preference != 0
+    AND $7 & users.sexual_preference != 0 ) AS list
+    WHERE visitor_liked_visited = false
+    AND visited_liked_visitor = false
+    AND visitor_blocked_visited = false
+    AND visited_blocked_visitor = false
     ORDER BY score DESC`, [user.id, user.latitude, user.longitude, user.nb_interests, user.age, user.sexual_preference, user.gender]);
-    // console.log(suggestionList.rows);
+    console.log(suggestionList.rows);
     return (suggestionList);
   }
 }

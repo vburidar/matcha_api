@@ -97,7 +97,7 @@ export default (app) => {
     async (req, res, next) => {
       console.log(req.session);
       if (req.session.user_id) {
-        return (res.status(200).send({ message: 'in_session', login: req.session.login }));
+        return (res.status(200).send({ message: 'in_session', user_id: req.session.user_id }));
       }
       return (res.status(200).send({ message: 'not_in_session' }));
     });
