@@ -25,12 +25,14 @@ export default class DbService {
     client.query('DROP TABLE IF EXISTS notifications');
     client.query('DROP TABLE IF EXISTS messages');
     client.query('DROP TABLE IF EXISTS likes');
+    client.query('DROP TABLE IF EXISTS visits');
     client.query('DROP TABLE IF EXISTS reports');
     client.query('DROP TABLE IF EXISTS blocks');
     client.query('DROP TABLE IF EXISTS images');
     client.query('DROP TABLE IF EXISTS users');
     client.query('DROP TABLE IF EXISTS interests');
     client.query('DROP TYPE IF EXISTS notification');
+    client.query('DROP TYPE IF EXISTS report');
     console.log('DROPPING DONE');
   }
 
@@ -39,6 +41,7 @@ export default class DbService {
     this.resetDatabase();
     console.log('CREATING TYPES AND TABLES');
     client.query('CREATE TYPE notification AS ENUM(\'message\', \'like\', \'unlike\', \'visit\', \'match\')');
+    client.query('CREATE TYPE report AS ENUM(\'fraud\', \'harassment\', \'identity_theft\')');
     client.query(`CREATE TABLE users (
       id serial PRIMARY KEY NOT NULL,
       login varchar(64) UNIQUE NOT NULL,
@@ -48,8 +51,8 @@ export default class DbService {
       first_name varchar(64),
       last_name varchar(64),
       birthdate date,
-      validated boolean,
-      gender int8,
+      validated boolean NOT NULL DEFAULT FALSE,
+      gender int,
       sexual_preference int,
       description varchar(1024),
       popularity_score int,
@@ -57,12 +60,12 @@ export default class DbService {
       is_online boolean)`);
     client.query(`CREATE TABLE images (
       id serial PRIMARY KEY NOT NULL,
-      user_id integer REFERENCES users(id),
-      is_profile boolean,
-      path varchar(256))`);
+      user_id integer REFERENCES users(id) NOT NULL,
+      is_profile boolean NOT NULL,
+      path varchar(256) NOT NULL)`);
     client.query(`CREATE TABLE interests(
       id serial PRIMARY KEY NOT NULL,
-      name varchar(64))`);
+      name varchar(64) UNIQUE NOT NULL)`);
     client.query(`CREATE TABLE blocks (
       sender_id integer REFERENCES users(id),
       receiver_id integer REFERENCES users(id),
@@ -70,6 +73,7 @@ export default class DbService {
     client.query(`CREATE TABLE reports (
       sender_id integer REFERENCES users(id),
       receiver_id integer REFERENCES users(id),
+      type report NOT NULL,
       PRIMARY KEY (sender_id, receiver_id))`);
     client.query(`CREATE TABLE likes(
       receiver_id integer REFERENCES users(id),
@@ -78,25 +82,30 @@ export default class DbService {
       PRIMARY KEY (sender_id, receiver_id))`);
     client.query(`CREATE TABLE messages (
       id serial PRIMARY KEY NOT NULL,
-      sender_id integer REFERENCES users(id),
-      receiver_id integer REFERENCES users(id),
-      date timestamp,
-      content_text varchar(2048))`);
+      sender_id integer REFERENCES users(id) NOT NULL,
+      receiver_id integer REFERENCES users(id) NOT NULL,
+      created_at timestamptz NOT NULL default NOW(),
+      content text)`);
     client.query(`CREATE TABLE locations(
       id serial PRIMARY KEY NOT NULL,
-      user_id integer REFERENCES users(id),
-      latitude real,
-      longitude real,
-      is_active boolean,
-      name varchar(64))`);
+      user_id integer REFERENCES users(id) NOT NULL,
+      latitude numeric(6, 4) NOT NULL,
+      longitude numeric(7, 4) NOT NULL,
+      is_active boolean NOT NULL,
+      name varchar(64) NOT NULL)`);
     client.query(`CREATE TABLE users_interests (
       user_id integer REFERENCES users(id),
       interest_id integer REFERENCES interests(id),
       PRIMARY KEY (user_id, interest_id))`);
     client.query(`CREATE TABLE notifications (
       id serial PRIMARY KEY NOT NULL,
-      type notification,
-      event_id integer)`);
+      type notification NOT NULL,
+      event_id integer NOT NULL)`);
+    client.query(`CREATE TABLE visits (
+      receiver_id integer REFERENCES users(id),
+      sender_id integer REFERENCES users(id),
+      created_at timestamptz NOT NULL default NOW(),
+      PRIMARY KEY (sender_id, receiver_id))`);
     client.query(`CREATE TABLE "sessions" (
       "sid" varchar NOT NULL COLLATE "default",
       "sess" json NOT NULL,
@@ -283,7 +292,7 @@ export default class DbService {
     Object.keys(interests).forEach(async (key) => {
       await client.query('INSERT INTO interests (name) VALUES ($1)', [interests[key]]);
     });
-    while (compteur < 100) {
+    while (compteur < 1000) {
       await createUser(compteur);
       compteur += 1;
     }

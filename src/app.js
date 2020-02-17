@@ -30,7 +30,7 @@ async function startServer() {
     secret: config.expressSession.secret,
     cookie: {
       resave: true,
-      maxAge: 600000,
+      maxAge: 60000000,
       httpOnly: true,
     },
     saveUninitialized: false,

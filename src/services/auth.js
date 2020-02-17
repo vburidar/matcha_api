@@ -122,6 +122,6 @@ export default class AuthService {
   }
 
   static async deleteSession(req) {
-    req.session.login = undefined;
+    req.session.user_id = undefined;
   }
 }
