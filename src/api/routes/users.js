@@ -13,7 +13,6 @@ export default (app) => {
     async (req, res, next) => {
       try {
         const list = await UserService.getSuggestionList(req.session.user_id);
-        // console.log(list.rows);
         return res.status(200).send(list);
       } catch (err) {
         return next(err);

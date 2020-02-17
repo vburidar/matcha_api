@@ -69,7 +69,8 @@ export default class User {
         users.first_name,
         users.last_name,
         users.description,
-        images.path,
+        images_not_profile.list_images,
+        image_profile.path,
         locations.latitude,
         locations.longitude,
         CASE WHEN visitor_received_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visited_liked_visitor,
@@ -115,16 +116,23 @@ export default class User {
         (SELECT * FROM blocks WHERE sender_id = $1 AND receiver_id = $4) AS visitor_received_block
       ON visitor_received_block.sender_id = users.id
       
-      INNER JOIN images
-      ON users.id = images.user_id
+      FULL OUTER JOIN (
+        SELECT user_id,
+        ARRAY_TO_STRING(ARRAY_AGG(path), ',') AS list_images
+        FROM images
+        WHERE is_profile = FALSE
+        GROUP BY user_id) AS images_not_profile
+      ON images_not_profile.user_id = users.id
+      
+      INNER JOIN (SELECT * FROM images WHERE is_profile = TRUE) as image_profile
+      ON image_profile.user_id = users.id
       WHERE users.id = $1`, [visitedId, visitor.latitude, visitor.longitude, visitor.id]);
-    console.log(profile.rows);
     return (profile);
   }
 
   static async getUserCompleteInfo(userId) {
-    const user = await PostgresService.pool.query(
-      `SELECT 
+    const user = await PostgresService.pool.query(`
+    SELECT 
         users.id,
         locations.latitude,
         locations.longitude,
@@ -134,8 +142,10 @@ export default class User {
         users.gender
 
       FROM users
+      
       INNER JOIN locations
       ON users.id = locations.user_id
+      
       INNER JOIN (
         SELECT
           user_id,
@@ -144,10 +154,15 @@ export default class User {
           GROUP BY user_id
           ) AS users_interests
       ON users.id = users_interests.user_id
-      INNER JOIN images
-        ON users.id = images.user_id
-        WHERE users.id = $1`, [userId],
-    );
+      
+      INNER JOIN (
+        SELECT 
+          user_id,
+          ARRAY_TO_STRING(ARRAY_AGG(path), ',') AS list_images
+        FROM images
+        GROUP BY user_id ) as images
+      ON users.id = images.user_id
+      WHERE users.id = $1`, [userId]);
     return (user);
   }
 
@@ -166,7 +181,8 @@ export default class User {
       interests.list_interests,
       interests_2.list_all_interests,
       locations.distance,
-      images.path,
+      images_not_profile.list_images,
+      image_profile.path,
       users.description,
       users.gender AS gender_receiver,
       users.sexual_preference::bit(4) AS pref_receiver,
@@ -187,11 +203,17 @@ export default class User {
       FROM locations) AS locations
     ON locations.user_id = users.id
 
-    INNER JOIN (
-      SELECT * FROM images 
-      WHERE is_profile = true) AS images
-    ON images.user_id = users.id
+    FULL OUTER JOIN (
+      SELECT user_id,
+      ARRAY_TO_STRING(ARRAY_AGG(path), ',') AS list_images
+      FROM images
+      WHERE is_profile = FALSE
+      GROUP BY user_id) AS images_not_profile
+    ON images_not_profile.user_id = users.id
     
+    INNER JOIN (SELECT * FROM images WHERE is_profile = TRUE) as image_profile
+    ON image_profile.user_id = users.id
+
     INNER JOIN
       
       (SELECT

@@ -55,4 +55,27 @@ export default class EventService {
       throw new ErrException({ id: 'invalid_request', description: 'could not delete report' });
     }
   }
+
+  static async createVisit(visitedId, visitorId) {
+    console.log('in service', visitedId, visitorId);
+    if (visitedId != visitorId) {
+      console.log('in here');
+      try {
+        const like = await Event.createVisit(visitedId, visitorId);
+        return (like);
+      } catch (err) {
+        throw new ErrException({ id: 'invalid_request', description: 'could not insert visit' });
+      }
+    }
+    return ({ message: 'visited himself' });
+  }
+
+  static async getListEvent(userId) {
+    try {
+      const list = await Event.getListEvent(userId);
+      return (list);
+    } catch (err) {
+      throw new ErrException({ id: 'invalid_request', description: 'could not fetch list event' });
+    }
+  }
 }

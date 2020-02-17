@@ -63,6 +63,8 @@ export default class DbService {
       user_id integer REFERENCES users(id) NOT NULL,
       is_profile boolean NOT NULL,
       path varchar(256) NOT NULL)`);
+    client.query(`CREATE UNIQUE INDEX test 
+    ON images (user_id) WHERE is_profile = 'true';`);
     client.query(`CREATE TABLE interests(
       id serial PRIMARY KEY NOT NULL,
       name varchar(64) UNIQUE NOT NULL)`);
@@ -105,7 +107,7 @@ export default class DbService {
       receiver_id integer REFERENCES users(id),
       sender_id integer REFERENCES users(id),
       created_at timestamptz NOT NULL default NOW(),
-      PRIMARY KEY (sender_id, receiver_id))`);
+      PRIMARY KEY (sender_id, receiver_id, created_at))`);
     client.query(`CREATE TABLE "sessions" (
       "sid" varchar NOT NULL COLLATE "default",
       "sess" json NOT NULL,
