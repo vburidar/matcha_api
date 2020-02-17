@@ -15,6 +15,45 @@ export default class User {
     return (user.rows[0]);
   }
 
+  static toSnakeCase(data) {
+    return Object.keys(data)
+      .reduce((acc, key) => {
+        const newKey = key.replace(/\W+/g, ' ')
+          .split(/ |\B(?=[A-Z])/)
+          .map((word) => word.toLowerCase())
+          .join('_');
+
+        return {
+          ...acc,
+          [newKey]: data[key],
+        };
+      }, {});
+  }
+
+  static async update(id, rawData, { inTransaction }) {
+    const data = this.toSnakeCase(rawData);
+
+    const queryText = `
+      UPDATE users SET
+      ${Object.keys(data).map((el, index) => `${el}=$${index + 2}`)}
+      WHERE id=$1
+      RETURNING *
+    `;
+
+    const params = [
+      id,
+      ...Object.values(data),
+    ];
+
+    const user = await PostgresService.query(
+      queryText,
+      params,
+      inTransaction,
+    );
+
+    return user.rows[0];
+  }
+
   static async getUserByLogin(login) {
     const user = await PostgresService.pool.query(
       `SELECT
@@ -60,5 +99,50 @@ export default class User {
       [newPwdData[0], newPwdData[1], login],
     );
     return (update);
+  }
+
+  static async attachInterests(id, interestsParams, { inTransaction }) {
+    const interests = (interestsParams instanceof Array) ? interestsParams : [interestsParams];
+
+    let queryText = `
+    WITH
+      existingones AS (
+          SELECT *
+          FROM users_interests
+          WHERE user_id = $1 AND interest_id IN (${interests.map((interest, index) => `$${index + 2}`)})
+      ),
+    `;
+
+    interests.forEach((interest, index) => {
+      queryText += `
+      new${index + 1} AS (
+        INSERT INTO users_interests (user_id, interest_id)
+        SELECT $1, $${index + 2}
+        WHERE NOT EXISTS (
+            SELECT *
+            FROM users_interests
+            WHERE user_id = $1 AND interest_id = $${index + 2}
+        )
+        RETURNING *
+      )${index + 1 < interests.length ? ',' : ''}
+      `;
+    });
+
+    queryText += 'SELECT * FROM existingones UNION ';
+
+    interests.forEach((interest, index) => {
+      queryText += `SELECT * FROM new${index + 1} ${index + 1 < interests.length ? 'UNION ' : ''}`;
+    });
+
+    const usersInterests = await PostgresService.query(
+      queryText,
+      [
+        id,
+        ...interests.map((interest) => interest.id),
+      ],
+      inTransaction,
+    );
+
+    return usersInterests.rows;
   }
 }

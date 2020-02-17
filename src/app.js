@@ -22,7 +22,9 @@ async function startServer() {
     credentials: true,
   };
   app.use(cors(corsOptions));
-  app.use(bodyParser.json());
+
+  app.use(bodyParser.json({ limit: '10mb' }));
+
   const PgSession = PgStore(session);
   app.use(session({
     secret: config.expressSession.secret,
@@ -38,6 +40,8 @@ async function startServer() {
       tableName: 'sessions',
     }),
   }));
+
+  app.use('/pictures', express.static('public/pictures'));
 
   app.use(config.api.prefix, routes());
 
