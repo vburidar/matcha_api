@@ -1,10 +1,27 @@
 import Event from '../models/Event';
 import { ErrException } from '../api/middlewares/errorHandler';
+import User from '../models/Event';
+
+function createScore(likesReceived, likesSent, match, avgMatch) {
+  console.log('rec', likesReceived, 'sent', likesSent, 'match', match, 'avgmatch', avgMatch);
+  const score1 = likesReceived / (likesReceived + likesSent + 1);
+  const score2 = (match / (likesSent + 1));
+  return (score1 + score2);
+}
 
 export default class EventService {
   static async createLike(visitedId, visitorId) {
     try {
       const like = await Event.createLike(visitedId, visitorId);
+      const nbLikeVisitor = await Event.getNbLikes(visitorId);
+      const nbLikeVisited = await Event.getNbLikes(visitedId);
+      const avgMatch = await Event.getAverageMatchingRatePerGivenLike();
+      const scoreVisitor = createScore(nbLikeVisitor.nb_likes_received, nbLikeVisitor.nb_likes_sent,
+        nbLikeVisitor.nb_match, avgMatch.avg);
+      const scoreVisited = createScore(nbLikeVisited.nb_likes_received, nbLikeVisited.nb_likes_sent,
+        nbLikeVisited.nb_match, avgMatch.avg);
+      Event.updatePopularityScore(scoreVisitor, visitorId);
+      Event.updatePopularityScore(scoreVisited, visitedId);
       return (like);
     } catch (err) {
       throw new ErrException({ id: 'invalid_request', description: 'could not insert like' });
@@ -14,6 +31,15 @@ export default class EventService {
   static async deleteLike(visitedId, visitorId) {
     try {
       const like = await Event.deleteLike(visitedId, visitorId);
+      const nbLikeVisitor = await Event.getNbLikes(visitorId);
+      const nbLikeVisited = await Event.getNbLikes(visitedId);
+      const avgMatch = await Event.getAverageMatchingRatePerGivenLike();
+      const scoreVisitor = createScore(nbLikeVisitor.nb_likes_received, nbLikeVisitor.nb_likes_sent,
+        nbLikeVisitor.nb_match, avgMatch.avg);
+      const scoreVisited = createScore(nbLikeVisited.nb_likes_received, nbLikeVisited.nb_likes_sent,
+        nbLikeVisited.nb_match, avgMatch.avg);
+      Event.updatePopularityScore(scoreVisitor, visitorId);
+      Event.updatePopularityScore(scoreVisited, visitedId);
       return (like);
     } catch (err) {
       throw new ErrException({ id: 'invalid_request', description: 'could not delete like' });
@@ -57,9 +83,7 @@ export default class EventService {
   }
 
   static async createVisit(visitedId, visitorId) {
-    console.log('in service', visitedId, visitorId);
     if (visitedId != visitorId) {
-      console.log('in here');
       try {
         const like = await Event.createVisit(visitedId, visitorId);
         return (like);

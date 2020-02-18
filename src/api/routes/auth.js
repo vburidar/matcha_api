@@ -40,7 +40,6 @@ export default (app) => {
       try {
         const user = await AuthService.signin(req.body);
         if (user && req.session.login === undefined) {
-          console.log('initializing session');
           req.session.user_id = user.id;
         } else if (user) {
           return next(new ErrException({ id: 'user_logged_already' }));
@@ -68,7 +67,6 @@ export default (app) => {
         const reset = await AuthService.sendResetPwdLink(req.body);
         return res.status(200).send(reset);
       } catch (err) {
-        console.log(err);
         return next(err);
       }
     });
@@ -95,7 +93,6 @@ export default (app) => {
 
   route.post('/ping',
     async (req, res, next) => {
-      console.log(req.session);
       if (req.session.user_id) {
         return (res.status(200).send({ message: 'in_session', user_id: req.session.user_id }));
       }
@@ -105,7 +102,6 @@ export default (app) => {
   route.delete('/deleteSession',
     async (req, res, next) => {
       if (req.session.user_id) {
-        console.log(req.session);
         req.session.destroy();
         res.status(200).send('session successfully deleted');
       } else {

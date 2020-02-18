@@ -9,14 +9,12 @@ export default class User {
   }
 
   static async createBlock(visitedId, visitorId) {
-    console.log('visited', visitedId, 'visitor', visitorId);
     const user = await PostgresService.pool.query(`
     INSERT INTO blocks (receiver_id, sender_id) VALUES ($1, $2)`, [visitedId, visitorId]);
     return user;
   }
 
   static async createReport(visitedId, visitorId, type) {
-    console.log('visited', visitedId, 'visitor', visitorId, 'type', type);
     const user = await PostgresService.pool.query(`
     INSERT INTO reports (receiver_id, sender_id, type) VALUES ($1, $2, $3)`, [visitedId, visitorId, type]);
     return user;
@@ -29,7 +27,6 @@ export default class User {
   }
 
   static async deleteLike(visitedId, visitorId) {
-    console.log('visited', visitedId, 'visitor', visitorId);
     const user = await PostgresService.pool.query(`
     DELETE FROM likes
     WHERE receiver_id = $1 
@@ -38,7 +35,6 @@ export default class User {
   }
 
   static async deleteBlock(visitedId, visitorId) {
-    console.log('visited', visitedId, 'visitor', visitorId);
     const user = await PostgresService.pool.query(`
     DELETE FROM blocks
     WHERE receiver_id = $1 
@@ -47,7 +43,6 @@ export default class User {
   }
 
   static async deleteVisit(visitedId, visitorId) {
-    console.log('visited', visitedId, 'visitor', visitorId);
     const user = await PostgresService.pool.query(`
     DELETE FROM visits
     WHERE receiver_id = $1 
@@ -56,7 +51,6 @@ export default class User {
   }
 
   static async getListEvent(userId) {
-    console.log('in model user_id = ', userId);
     const list = await PostgresService.query(`
     SELECT 
     receiver_id,
@@ -124,5 +118,96 @@ export default class User {
       ORDER BY created_at DESC`, [userId]);
     console.log(list.rows);
     return (list);
+  }
+
+  static async getNbLikes(userId) {
+    const list = await PostgresService.query(`
+      SELECT 
+        sent.nb_likes_sent::INTEGER,
+        received.nb_likes_received::INTEGER,
+        totallikes.nb_match
+      FROM (
+      SELECT
+        sender_id,
+        COUNT(*) as nb_likes_sent
+      FROM likes
+      WHERE sender_id = $1
+      GROUP BY sender_id) AS sent
+      
+      INNER JOIN 
+      
+      (SELECT 
+        receiver_id,
+        COUNT(*) as nb_likes_received
+      FROM likes
+      WHERE receiver_id = $1
+      GROUP BY receiver_id) AS received
+
+      ON sent.sender_id = received.receiver_id
+      
+      INNER JOIN
+
+      (SELECT 
+        count(*) AS nb_match,
+        $1 as user_id
+        FROM (
+        SELECT * FROM likes AS likes1
+        INNER JOIN (
+          SELECT * FROM likes
+        ) AS likes2
+        ON likes1.sender_id = likes2.receiver_id
+        WHERE likes1.receiver_id = $1 AND likes2.sender_id = $1 AND likes2.created_at < likes1.created_at
+      ) AS totallikes) AS totallikes
+
+      ON totallikes.user_id = sent.sender_id
+      `, [userId]);
+    return (list.rows[0]);
+  }
+
+  static async getAverageMatchingRatePerGivenLike() {
+    const ret = await PostgresService.query(`
+    SELECT 
+      AVG(nb_match)
+      FROM
+      (
+    SELECT
+      CASE WHEN nb_match IS NULL THEN 0 ELSE nb_match END AS nb_match
+    FROM(
+    SELECT 
+        COUNT(*) AS nb_match,
+        send1 AS sender_id
+        FROM (SELECT * FROM(
+          SELECT
+            sender_id as send1,
+            receiver_id as rec1,
+            created_at
+          FROM likes) AS likes1
+          INNER JOIN (
+          SELECT 
+            receiver_id as rec2,
+            sender_id as send2,
+            created_at
+          FROM likes
+        ) AS likes2
+        ON likes1.send1 = likes2.rec2 AND likes2.send2 = likes1.rec1
+        WHERE likes1.created_at < likes2.created_at
+      ) AS totallikes
+      GROUP BY totallikes.send1 ) as totallikes
+      
+      FULL OUTER JOIN
+      (SELECT id FROM users) AS users 
+      ON totallikes.sender_id = users.id
+      ) AS test
+
+    `);
+    return (ret.rows[0]);
+  }
+
+  static async updatePopularityScore(score, userId) {
+    const ret = await PostgresService.query(`
+    UPDATE users
+    SET popularity_score = $1
+    WHERE id = $2`, [parseInt(score * 100), userId]);
+    return (ret.rows[0]);
   }
 }
