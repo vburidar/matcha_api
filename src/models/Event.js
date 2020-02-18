@@ -58,12 +58,25 @@ export default class User {
   static async getListEvent(userId) {
     console.log('in model user_id = ', userId);
     const list = await PostgresService.query(`
-    SELECT * FROM 
+    SELECT 
+    receiver_id,
+    created_at,
+    EXTRACT (YEAR FROM AGE (NOW(), created_at)) AS years_since,
+    EXTRACT (MONTH FROM AGE (NOW(), created_at)) AS months_since,
+    EXTRACT (DAY FROM AGE (NOW(), created_at)) AS days_since,
+    EXTRACT (HOUR FROM AGE (NOW(), created_at)) AS hours_since,
+    EXTRACT (MINUTE FROM AGE (NOW(), created_at)) AS minute_since,
+    type,
+    sender_id,
+    first_name,
+    user_id,
+    path
+     FROM 
     (  
       SELECT
         receiver_id,
         created_at,
-        'likes' AS type,
+        'like' AS type,
         sender_id 
       FROM likes
       WHERE likes.receiver_id = $1
@@ -73,11 +86,24 @@ export default class User {
       SELECT
           receiver_id,
           created_at,
-          'visits' AS type,
+          'visit' AS type,
           sender_id 
         FROM visits
       WHERE visits.receiver_id = $1
-      
+
+      UNION
+
+      SELECT
+        like1.receiver_id,
+        CASE WHEN like1.created_at > like2.created_at THEN like1.created_at ELSE like2.created_at END AS created_at,
+        'match' as type,
+        like1.sender_id
+      FROM
+        (SELECT * FROM likes WHERE receiver_id = $1) AS like1 
+        INNER JOIN
+        (SELECT * FROM likes WHERE sender_id = $1) AS like2
+        ON like1.sender_id = like2.receiver_id
+
       ) AS event
       
       INNER JOIN (
