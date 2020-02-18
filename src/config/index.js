@@ -32,4 +32,9 @@ export default {
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+
+  storage: {
+    system: process.env.STORAGE_SYSTEM || 'fs',
+    path: process.env.STORAGE_PATH || 'public',
+  },
 };
