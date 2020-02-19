@@ -5,6 +5,8 @@ import config from '../config';
 import {
   names, firstNamesWoman, firstNamesMan, interests, locations,
 } from '../../populate_data/populate';
+import EventService from './event';
+import EventModel from '../models/Event';
 
 
 const client = new Client({
@@ -224,33 +226,42 @@ export default class DbService {
       AND $6 & users.gender != 0
       AND $7 & users.sexual_preference != 0
       ORDER BY score DESC`, [userId, userLat, userLong, nbInterests, userAge, userPref, userGender]);
-      console.log(suggestionList.rows);
+      // console.log(suggestionList.rows);
       return (suggestionList);
     }
 
     async function generateLikes(list, userId) {
+      // console.log('generates like for user', userId);
       const arr = [];
       const nbLikeSent = Math.ceil(list.rows.length / 10);
-      // console.log('user', userId, 'sent', nbLikeSent, 'likes on', list.rows.length, 'suggestions');
       while (arr.length < nbLikeSent) {
         const r = Math.floor(Math.random() * list.rows.length);
         if (arr.indexOf(r) === -1) arr.push(r);
       }
       let compteur = 0;
       while (compteur < arr.length) {
-        await client.query('INSERT INTO likes (sender_id, receiver_id) VALUES ($1, $2)', [userId, list.rows[arr[compteur]].user_id]);
+        await client.query('INSERT INTO likes (receiver_id, sender_id) VALUES ($1, $2)', [userId, list.rows[arr[compteur]].user_id]);
         compteur += 1;
       }
     }
 
     async function getSuggestionList(userId) {
-      console.log('userId = ', userId);
+      // console.log('userId = ', userId);
       const ownLoc = await client.query('SELECT * FROM locations WHERE user_id = $1', [userId]);
       const interest = await client.query('SELECT * FROM users_interests WHERE user_id = $1', [userId]);
       const age = await client.query('SELECT EXTRACT (YEAR FROM AGE(birthdate)) AS age FROM users WHERE id = $1', [userId]);
       const pref = await client.query('SELECT sexual_preference, gender FROM users WHERE id = $1', [userId]);
+      // console.log('userId =', userId, 'location = ', ownLoc.rows);
       const list = await multifactorMatching(userId, ownLoc.rows[0].latitude, ownLoc.rows[0].longitude, interest.rows.length, age.rows[0].age, pref.rows[0].sexual_preference, pref.rows[0].gender);
-      generateLikes(list, userId);
+      await generateLikes(list, userId);
+      const nbLike = await EventModel.getNbLikes(userId);
+      // console.log(nbLike);
+      if (nbLike !== undefined) {
+        const score = EventService.createScore(nbLike.nb_likes_received, nbLike.nb_likes_sent,
+          nbLike.nb_match);
+        // console.log('score user=', score);
+        EventModel.updatePopularityScore(score, userId);
+      }
     }
 
     async function getAllUsersId() {
@@ -278,9 +289,12 @@ export default class DbService {
       try {
         await client.query(`INSERT INTO 
       users 
-      (login, password, salt, email, first_name, last_name, gender, birthdate, validated, description, sexual_preference) 
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-        [`${tmpFirstName}_${tmpLastName}`, pwdData[0], pwdData[1], `${tmpFirstName}_${tmpLastName}@yopmail.com`, tmpFirstName, tmpLastName, genderId, tmpBirthdate, true, 'beep bop I\'m a bot', 1 + Math.floor(Math.random() * 3)]);
+      (login, password, salt, email, first_name, last_name, gender, birthdate, validated,
+        description, sexual_preference, popularity_score) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+        [`${tmpFirstName}_${tmpLastName}`, pwdData[0], pwdData[1], `${tmpFirstName}_${tmpLastName}@yopmail.com`,
+          tmpFirstName, tmpLastName, genderId, tmpBirthdate, true,
+          'beep bop I\'m a bot', 1 + Math.floor(Math.random() * 3), 0]);
         const userId = await getUserId(tmpFirstName, tmpLastName);
         await createInterests(userId);
         await createLocation(userId);
@@ -301,8 +315,36 @@ export default class DbService {
     compteur = 0;
     const userId = await getAllUsersId();
     while (compteur < userId.length) {
-      getSuggestionList(userId[compteur].id);
+      await getSuggestionList(userId[compteur].id);
       compteur += 1;
+    }
+  }
+
+  static createNUsers(nbUsers) {
+    let cmp = 0;
+    const tab = [];
+    const givenLogin = [];
+
+    while (cmp < nbUsers) {
+      tab[cmp].gender = Math.floor(Math.random() * 2) + 1;
+      while (tab[cmp].firstName === undefined || givenLogin.includes(tab[cmp].firstName + tab[cmp])) {
+        if (tab[cmp].gender === 2) {
+          tab[cmp].firstName = firstNamesWoman[Math.floor(Math.random() * firstNamesWoman.length)];
+        } else {
+          tab[cmp].firstName = firstNamesMan[Math.floor(Math.random() * firstNamesMan.length)];
+        }
+      }
+      tab[cmp].sexualPreference = Math.floor(Math.random() * 3);
+      tab[cmp].login = `${tab[cmp].firstName}_${tab[cmp].lastName}`;
+      tab[cmp].email = `${tab[cmp].login}@yopmail.com`;
+      tab[cmp].pwdData = hashPwd('Qwerty123');
+      tab[cmp].birthdate = randomDate('01/01/1988', '01/01/1998');
+      tab[cmp].validated = true;
+      tab[cmp].description = 'beep bop I am a bot';
+      tab[cmp].location = createLocation();
+      tab[cmp].interests = createInterests();
+      tab[cmp].pics = createPics();
+      cmp += 1;
     }
   }
 }
