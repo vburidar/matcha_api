@@ -40,10 +40,17 @@ export default class PopulateService {
 
   static createInterests() {
     const ret = [];
+    const givenInterests = [];
     const nbInsert = 3 + Math.floor(Math.random() * 5);
     let compteur = 0;
+    let tmp = 0;
     while (compteur < nbInsert) {
-      ret[compteur] = Math.floor(Math.random() * interests.length);
+      tmp = 0;
+      while (tmp === 0 || givenInterests.includes(tmp)) {
+        tmp = Math.floor(Math.random() * interests.length);
+      }
+      ret[compteur] = tmp;
+      givenInterests.push(tmp);
       compteur += 1;
     }
     return (ret);
@@ -66,7 +73,7 @@ export default class PopulateService {
         tab[cmp].lastName = names[Math.floor(Math.random() * names.length)];
       }
       givenLogin.push(tab[cmp].firstName + tab[cmp].lastName);
-      tab[cmp].sexualPreference = Math.floor(Math.random() * 3);
+      tab[cmp].sexualPreference = Math.floor(Math.random() * 3) + 1;
       tab[cmp].login = `${tab[cmp].firstName}_${tab[cmp].lastName}`;
       tab[cmp].email = `${tab[cmp].login}@yopmail.com`;
       tab[cmp].pwdData = AuthService.hashPwd('Qwerty123');
@@ -170,20 +177,137 @@ export default class PopulateService {
       }
       return (null);
     });
+    requestPic = `virtual_pic AS(${requestPic} RETURNING *)`;
+    if (startId === 0) {
+      requestPic = `WITH ${requestPic}`;
+    } else {
+      requestPic = `, ${requestPic}`;
+    }
     return ({ request: requestPic, tab: tabRequest, id: tabRequest.length + startId });
+  }
+
+  static createRequestInterests(tabUser, startId) {
+    const tabTmp = tabUser.reduce((accumulator, currentUser) => [
+      ...accumulator,
+      currentUser.login,
+      currentUser.interests,
+    ], []);
+    const tabRequest = tabUser.reduce((accumulator, currentUser) => [
+      ...accumulator,
+      currentUser.login,
+      ...currentUser.interests,
+    ], []);
+    let requestInterest = 'INSERT INTO users_interests (user_id, interest_id) VALUES';
+    let idxUser = 0;
+    let cmpVarRequest = 1;
+    tabTmp.map((elem, idx) => {
+      if (idx % 2 === 0) {
+        idxUser = cmpVarRequest + startId;
+        cmpVarRequest += 1;
+      }
+      if (idx % 2 === 1) {
+        elem.map((elemInt, idxInt) => {
+          requestInterest += ` ((SELECT id FROM virtual_users WHERE login = $${idxUser.toString()}), `;
+          requestInterest += `$${cmpVarRequest + startId})`;
+          if (idx !== tabTmp.length - 1 || idxInt !== elem.length - 1) {
+            requestInterest += ',';
+          }
+          cmpVarRequest += 1;
+        });
+      }
+    });
+    return ({ request: requestInterest, tab: tabRequest, id: cmpVarRequest });
   }
 
   static createRequest(partitionUser) {
     const requestUser = this.createRequestUser(partitionUser, 0);
     const requestLocation = this.createRequestLocation(partitionUser, requestUser.id);
     const requestPic = this.createRequestPic(partitionUser, requestLocation.id);
-    const bigRequest = requestUser.request + requestLocation.request + requestPic.request;
-    const bigTab = requestUser.tab.concat(requestLocation.tab).concat(requestPic.tab);
+    const requestInterest = this.createRequestInterests(partitionUser, requestPic.id);
+    const bigRequest = requestUser.request + requestLocation.request + requestPic.request + requestInterest.request;
+    const bigTab = requestUser.tab.concat(requestLocation.tab).concat(requestPic.tab).concat(requestInterest.tab);
     return ({ request: bigRequest, tab: bigTab });
   }
 
+  static async generateLike(userLogin) {
+    const list = await PostgresService.query(`
+    WITH virtual_user AS (
+      SELECT 
+        users.id,
+        EXTRACT (YEAR FROM AGE(users.birthdate)) AS age,
+        sexual_preference,
+        gender,
+        latitude,
+        longitude
+      FROM (SELECT * FROM users WHERE login = $1) AS users
+      INNER JOIN locations ON users.id = locations.user_id),
+    virtual_interests AS (
+      SELECT * FROM ( SELECT * FROM users_interests WHERE user_id = (SELECT id FROM virtual_user)) AS interests),
+    nb_interest AS (
+      SELECT COUNT(*) AS value FROM users_interests WHERE user_id = (SELECT id FROM virtual_user))
+      
+      SELECT
+      interests.user_id, 
+      interests.common_interests, 
+      locations.distance,
+      users.gender AS gender_receiver,
+      users.sexual_preference::bit(4) AS pref_receiver,
+      (SELECT gender FROM virtual_user)::int as gender_sender,
+      (SELECT sexual_preference FROM virtual_user)::int as pref_sender,
+      abs((SELECT age FROM virtual_user) - EXTRACT (YEAR FROM AGE(users.birthdate))) as age_difference,
+      log(1 + (exp(1) - 1) * (common_interests::float / (SELECT value FROM nb_interest))) AS score_interest,
+      1 / (exp(abs((SELECT age FROM virtual_user) - EXTRACT (YEAR FROM AGE(users.birthdate)))/10)) as score_age,
+      1 / (exp(distance / 10)) AS score_distance,
+      log(1 + 1.7 * (common_interests::float / (SELECT value FROM nb_interest))) + 1 / (exp(abs((SELECT age FROM virtual_user) - EXTRACT (YEAR FROM AGE(users.birthdate)))/10)) + 1 / (exp(distance / 10)) AS score
+    FROM users
+    
+    INNER JOIN
+      (SELECT
+        user_id, 
+        111 * |/((latitude - (SELECT latitude FROM virtual_user))^2 + (longitude - (SELECT longitude FROM virtual_user))^2) AS distance 
+      FROM locations) AS locations
+    ON locations.user_id = users.id
+    
+    INNER JOIN
+      
+      (SELECT
+        user_id,
+        COUNT (*) AS common_interests
+      FROM
+        (SELECT  * FROM users_interests WHERE user_id != (SELECT id FROM virtual_user)) AS test1
+
+      INNER JOIN
+        (SELECT interest_id FROM users_interests WHERE user_id = (SELECT id FROM virtual_user)) AS test2
+      ON test1.interest_id = test2.interest_id
+      GROUP BY user_id) AS interests
+    
+    ON locations.user_id = interests.user_id
+
+    WHERE locations.distance < 20
+    AND (SELECT sexual_preference FROM virtual_user) & users.gender != 0
+    AND (SELECT gender FROM virtual_user) & users.sexual_preference != 0
+    ORDER BY score DESC`, [userLogin]);
+    const arr = [];
+    const nbLikeSent = Math.ceil(list.rows.length / 10);
+    while (arr.length < nbLikeSent) {
+      const r = Math.floor(Math.random() * list.rows.length);
+      if (arr.indexOf(r) === -1) arr.push(r);
+    }
+    arr.map(async (elem) => {
+      await PostgresService.query(`
+      WITH virtual_user AS(
+        SELECT id FROM users WHERE login = $1
+      )
+      INSERT INTO likes (receiver_id, sender_id) VALUES ((SELECT id FROM virtual_user) , $2)`, [userLogin, list.rows[elem].user_id]);
+    });
+    return (null);
+  }
+
   static async populate() {
-    const nUsers = 25000;
+    Object.keys(interests).forEach(async (key) => {
+      await PostgresService.query('INSERT INTO interests (name) VALUES ($1)', [interests[key]]);
+    });
+    const nUsers = 10000;
     const partitionSize = 1000;
     let nPartition = 0;
     const tabUser = this.createNUsers(nUsers);
@@ -192,19 +316,16 @@ export default class PopulateService {
       if (cmp % partitionSize === 0 && cmp !== 0) {
         const partitionUser = tabUser.slice(nPartition * partitionSize, cmp);
         const bigRequest = this.createRequest(partitionUser);
-        PostgresService.query(bigRequest.request, bigRequest.tab);
+        await PostgresService.query(bigRequest.request, bigRequest.tab);
         nPartition += 1;
       }
       cmp += 1;
     }
     const partitionUser = tabUser.slice(nPartition * partitionSize, cmp);
     const bigRequest = this.createRequest(partitionUser);
-    PostgresService.query(bigRequest.request, bigRequest.tab);
-    /* const requestUser = this.createRequestUser(tabUser, 0);
-    const requestLocation = this.createRequestLocation(tabUser, requestUser.id);
-    const requestPic = this.createRequestPic(tabUser, requestLocation.id);
-    const bigRequest = requestUser.request + requestLocation.request + requestPic.request;
-    const bigTab = requestUser.tab.concat(requestLocation.tab).concat(requestPic.tab);
-    PostgresService.query(bigRequest, bigTab);
-  */ }
+    await PostgresService.query(bigRequest.request, bigRequest.tab);
+    tabUser.map(async (elem) => {
+      this.generateLike(elem.login);
+    });
+  }
 }
