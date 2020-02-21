@@ -3,12 +3,14 @@ import cors from 'cors';
 import bodyParser from 'body-parser';
 import session from 'express-session';
 import PgStore from 'connect-pg-simple';
+
 import routes from './api';
 
 import config from './config';
 
 import EmailService from './services/email';
 import PostgresService from './services/postgres';
+import SocketService from './services/socket';
 import startJobs from './jobs';
 
 async function startServer() {
@@ -47,8 +49,10 @@ async function startServer() {
 
   startJobs();
 
-  app.listen(config.port, () => {
+  const server = app.listen(config.port, () => {
     console.log(`Server started on port ${config.port}`);
   });
+
+  SocketService.load(server);
 }
 startServer();
