@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { requestValidator, rv } from '../middlewares/requestValidator';
 import { errorHandler, ErrException } from '../middlewares/errorHandler';
 import UserService from '../../services/users';
+import ProfileService from '../../services/profile';
 
 const route = Router();
 
@@ -25,7 +26,12 @@ export default (app) => {
     async (req, res, next) => {
       console.log(req.params);
       try {
-        const profile = await UserService.getProfileInfo(req.params.user_id, req.session.user_id);
+        let profile;
+        if (req.params.user_id === 'current') {
+          profile = await ProfileService.getCompletePrivateProfile(req.session.user_id);
+        } else {
+          profile = await UserService.getProfileInfo(req.params.user_id, req.session.user_id);
+        }
         return res.status(200).send(profile);
       } catch (err) {
         return next(err);

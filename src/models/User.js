@@ -109,6 +109,17 @@ export default class User {
 
     let queryText = `
     WITH
+      deletedones AS (
+        DELETE FROM users_interests
+        WHERE user_id = $1 AND interest_id IN
+        (
+            SELECT interest_id
+            FROM users_interests
+            INNER JOIN interests ON users_interests.interest_id = interests.id
+            WHERE users_interests.user_id = $1 AND interest_id NOT IN (${interests.map((interest, index) => `$${index + 2}`)})
+        )
+        RETURNING *
+      ),
       existingones AS (
           SELECT *
           FROM users_interests
@@ -149,6 +160,82 @@ export default class User {
     return usersInterests.rows;
   }
 
+  static async getCompletePrivateProfile(userId, { inTransaction = false } = {}) {
+    try {
+      const queryText = `
+      SELECT
+        users.id,
+        users.login,
+        users.email,
+        users.first_name AS "firstName",
+        users.last_name AS "lastName",
+        users.birthdate,
+        users.gender,
+        users.sexual_preference AS "sexualPreference",
+        users.description,
+        users.popularity_score AS "popularityScore",
+
+        CASE WHEN locs.locations IS NULL THEN array_to_json('{}'::json[]) ELSE locs.locations END,
+        CASE WHEN imgs.images IS NULL THEN array_to_json('{}'::json[]) ELSE imgs.images END,
+        CASE WHEN ints.interests IS NULL THEN array_to_json('{}'::json[]) ELSE ints.interests END
+      FROM users
+
+      FULL OUTER JOIN (
+        SELECT
+          user_id,
+          JSON_AGG(JSON_BUILD_OBJECT(
+            'id', images.id,
+            'isProfile', images.is_profile,
+            'path', images.path
+          )) AS images
+        FROM images
+        GROUP BY images.user_id
+      ) AS imgs
+      ON users.id = imgs.user_id
+
+      FULL OUTER JOIN (
+        SELECT
+          user_id,
+          JSON_AGG(JSON_BUILD_OBJECT(
+            'id', locations.id,
+            'latitude', locations.latitude,
+            'longitude', locations.longitude,
+            'isActive', locations.is_active,
+            'name', locations.name
+          )) AS locations
+        FROM locations
+        GROUP BY locations.user_id
+      ) AS locs
+      ON users.id = locs.user_id
+
+      FULL OUTER JOIN (
+        SELECT
+          user_id,
+          JSON_AGG(JSON_BUILD_OBJECT(
+            'id', interests.id,
+            'name', interests.name
+          )) AS interests
+        FROM users_interests
+        INNER JOIN interests ON users_interests.interest_id = interests.id
+        GROUP BY user_id
+      ) AS ints
+      ON users.id = ints.user_id
+
+      WHERE users.id = $1
+      `;
+
+      const user = await PostgresService.query(
+        queryText,
+        [userId],
+        inTransaction,
+      );
+
+      return user.rows[0];
+    } catch (err) {
+      return console.log(err);
+    }
+  }
+
   static async getProfileCompleteInfo(visitedId, visitor) {
     const profile = await PostgresService.pool.query(`
       SELECT 
@@ -181,9 +268,9 @@ export default class User {
           user_id,
           COUNT (*) AS nb_interests,
           ARRAY_TO_STRING(ARRAY_AGG(interests.name), ',') AS list_interests
-          FROM users_interests INNER JOIN interests ON users_interests.interest_id = interests.id
-          GROUP BY user_id
-          ) AS users_interests
+        FROM users_interests INNER JOIN interests ON users_interests.interest_id = interests.id
+        GROUP BY user_id
+      ) AS users_interests
       
       ON users.id = users_interests.user_id
 

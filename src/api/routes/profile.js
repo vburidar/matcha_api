@@ -21,7 +21,7 @@ export default (app) => {
         const {
           user, interests, locations, pictures,
         } = req.body;
-        const ret = await ProfileService.completeProfile(1, user, interests, locations, pictures);
+        const ret = await ProfileService.completeProfile(req.session.user_id, user, interests, locations, pictures);
         res.json(ret);
       } catch (err) {
         res.status(500).send(err.message);
