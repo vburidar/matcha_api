@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import AuthService from '../../services/auth';
+import UserService from '../../services/users';
 import { requestValidator, rv } from '../middlewares/requestValidator';
 import { errorHandler, ErrException } from '../middlewares/errorHandler';
 
@@ -97,7 +98,9 @@ export default (app) => {
   route.post('/ping',
     async (req, res, next) => {
       if (req.session.user_id) {
-        return (res.status(200).send({ message: 'in_session', user_id: req.session.user_id }));
+        const profileIsComplete = await UserService.isComplete(req.session.user_id);
+        console.log('profileIsComplete = ', profileIsComplete);
+        return (res.status(200).send({ message: 'in_session', user_id: req.session.user_id, isComplete: profileIsComplete }));
       }
       return (res.status(200).send({ message: 'not_in_session' }));
     });

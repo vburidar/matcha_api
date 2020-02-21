@@ -4,7 +4,7 @@ import { ErrException } from '../api/middlewares/errorHandler';
 export default class UserService {
   static async getSuggestionList(userId) {
     try {
-      //console.log('userId = ', userId);
+      // console.log('userId = ', userId);
       const user = await User.getUserCompleteInfo(userId);
       const list = await User.getSuggestionList(user.rows[0]);
       return (list);
@@ -20,6 +20,18 @@ export default class UserService {
       return (user);
     } catch (err) {
       throw new ErrException({ id: 'fatal_error', description: 'could not fetch Profile infos' });
+    }
+  }
+
+  static async isComplete(userId) {
+    try {
+      const isComplete = await User.isComplete(userId);
+      if (isComplete.rows[0].birthdate) {
+        return (true);
+      }
+      return (false);
+    } catch (err) {
+      throw new ErrException({ id: 'fatal_error', description: 'could not check if profile is complete' });
     }
   }
 }

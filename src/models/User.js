@@ -366,4 +366,11 @@ export default class User {
     console.log(suggestionList.rows);
     return (suggestionList);
   }
+
+  static async isComplete(userId) {
+    const isComplete = await PostgresService.query(`
+    SELECT birthdate from users
+    WHERE id = $1`, [userId]);
+    return (isComplete);
+  }
 }
