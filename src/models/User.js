@@ -2,11 +2,14 @@
 import PostgresService from '../services/postgres';
 
 export default class User {
-  static async create(login, hashedPassword, salt, email) {
+  static async create(login, firstName, lastName, hashedPassword, salt, email) {
     const user = await PostgresService.pool.query(
-      'INSERT INTO users (login, password, salt, email) VALUES ($1, $2, $3, $4) RETURNING id, login, email',
+      `INSERT INTO users (login, first_name, last_name, password, salt, email) 
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, login, email`,
       [
         login,
+        firstName,
+        lastName,
         hashedPassword,
         salt,
         email,

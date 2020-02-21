@@ -14,12 +14,15 @@ export default (app) => {
     requestValidator({
       body: {
         login: [rv.required(), rv.string()],
+        firstName: [rv.required(), rv.string()],
+        lastName: [rv.required(), rv.string()],
         password: [rv.required(), rv.string(), rv.password()],
         email: [rv.required(), rv.string(), rv.email()],
       },
     }),
     async (req, res, next) => {
       try {
+        console.log(req.body);
         const user = await AuthService.signup(req.body);
         return res.status(200).send(user);
       } catch (err) {
