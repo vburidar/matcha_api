@@ -9,6 +9,8 @@ export default class AuthService {
     try {
       const user = await User.create(
         userInput.login,
+        userInput.firstName,
+        userInput.lastName,
         hashedPwd,
         salt,
         userInput.email,

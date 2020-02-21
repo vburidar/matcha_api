@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import DbService from '../../services/db';
+import PopulateService from '../../services/populate';
 
 const route = Router();
 
@@ -36,7 +37,8 @@ export default (app) => {
     '/populate',
     async (req, res, next) => {
       try {
-        DbService.populateDatabase();
+        //DbService.populateDatabase();
+        PopulateService.populate();
         return res.status(200).send('SUCCESS');
       } catch (err) {
         console.log(err);
