@@ -42,12 +42,16 @@ export default (app) => {
   route.get('/status',
     async (req, res, next) => {
       if (req.session.user_id) {
-        const profileIsComplete = await UserService.isComplete(req.session.user_id);
-        return (res.status(200).send({
-          user_id: req.session.user_id,
-          connected: true,
-          profileIsComplete,
-        }));
+        try {
+          const profileIsComplete = await UserService.isComplete(req.session.user_id);
+          return (res.status(200).send({
+            user_id: req.session.user_id,
+            connected: true,
+            profileIsComplete,
+          }));
+        } catch (err) {
+          return next(err);
+        }
       }
       return (res.status(200).send({ connected: false }));
     });
