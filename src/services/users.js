@@ -15,6 +15,7 @@ export default class UserService {
 
   static async getProfileInfo(visitedId, visitorId) {
     try {
+      console.log('here visited id = ', visitedId, ' visitorId = ', visitorId);
       const visitor = await User.getUserCompleteInfo(visitorId);
       const user = await User.getProfileCompleteInfo(visitedId, visitor.rows[0]);
       return (user);
