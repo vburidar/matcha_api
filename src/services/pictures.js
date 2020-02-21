@@ -4,7 +4,7 @@ import sharp from 'sharp';
 import config from '../config';
 
 export default class PicturesService {
-  static async uploadPictureFs(pictureData, fileName) {
+  static uploadPictureFs(pictureData, fileName) {
     try {
       fs.writeFileSync(
         path.join(config.storage.path, fileName),
@@ -38,8 +38,9 @@ export default class PicturesService {
     const fileName = `${Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 10)}.jpg`;
 
     if (config.storage.system === 'fs') {
-      await this.uploadPictureFs(pictureData, fileName);
+      this.uploadPictureFs(pictureData, fileName);
     }
+    // Add other storage systems here
 
     return fileName;
   }
