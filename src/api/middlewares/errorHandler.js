@@ -46,6 +46,9 @@ function errorHandler(err, req, res, next) {
   console.log('*****ERROR*****');
   console.log(dateError.toUTCString());
   console.log(err.id);
+  if (err.description) {
+    console.log(err.description);
+  }
   console.log('Current cookies', req.session.cookie);
   let errStatus = 400;
   if (err.id) {

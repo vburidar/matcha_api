@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import ProfileService from '../../services/profile';
 import { requestValidator, rv } from '../middlewares/requestValidator';
+import authValidator from '../middlewares/authValidator';
 
 const route = Router();
 
@@ -9,6 +10,7 @@ export default (app) => {
 
   route.patch(
     '/',
+    authValidator(true),
     // requestValidator({
     //   body: {
     //     // login: [rv.required(), rv.string()],

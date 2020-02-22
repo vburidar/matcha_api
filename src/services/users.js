@@ -4,7 +4,7 @@ import { ErrException } from '../api/middlewares/errorHandler';
 export default class UserService {
   static async getSuggestionList(userId) {
     try {
-      //console.log('userId = ', userId);
+      // console.log('userId = ', userId);
       const user = await User.getUserCompleteInfo(userId);
       const list = await User.getSuggestionList(user.rows[0]);
       return (list);
@@ -29,6 +29,36 @@ export default class UserService {
       return (users);
     } catch (err) {
       throw new ErrException({ id: 'fatal_error', description: 'could not fetch users with last messages' });
+    }
+  }
+
+  static async isComplete(userId) {
+    try {
+      const isComplete = await User.isComplete(userId);
+      if (isComplete.rows[0].birthdate) {
+        return (true);
+      }
+      return (false);
+    } catch (err) {
+      throw new ErrException({ id: 'fatal_error', description: 'could not check if profile is complete' });
+    }
+  }
+
+  static async createMessage(userId, receiverId, content) {
+    try {
+      const message = await User.addMessage(userId, receiverId, content);
+      return (message);
+    } catch (err) {
+      throw new ErrException({ id: 'bad_request', description: 'could not insert message in database' });
+    }
+  }
+
+  static async getMessages(userId, talkerId) {
+    try {
+      const messagesList = await User.getMessages(userId, talkerId);
+      return (messagesList);
+    } catch (err) {
+      throw new ErrException({ id: 'bad_request', description: 'could not fetch message List' });
     }
   }
 }
