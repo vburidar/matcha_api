@@ -37,5 +37,22 @@ export default (app) => {
       }
     },
   );
+
+  route.get(
+    '/:id/matches',
+    async (req, res, next) => {
+      try {
+        let profile;
+        if (req.params.id === 'current') {
+          profile = await UserService.getMatchesWithLastMessage(req.session.user_id);
+        } else {
+          throw new ErrException({ id: 'not-authorized' });
+        }
+        return res.status(200).send(profile);
+      } catch (err) {
+        return next(err);
+      }
+    },
+  );
   app.use(errorHandler);
 };

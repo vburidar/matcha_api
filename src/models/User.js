@@ -453,4 +453,64 @@ export default class User {
     console.log(suggestionList.rows);
     return (suggestionList);
   }
+
+  static async getUserWithLastMessage(userId, { inTransaction = false } = {}) {
+    try {
+      const queryText = `
+      WITH all_ids AS
+      (
+        SELECT id, msg1.other_user
+        FROM (
+          SELECT
+            MAX(created_at) AS created_at,
+            CASE WHEN messages.sender_id != $1
+              THEN sender_id
+              ELSE receiver_id END
+            AS other_user
+          FROM messages
+          GROUP BY other_user
+        ) AS msg1
+        INNER JOIN (
+          SELECT
+            id,
+            content,
+            created_at,
+            CASE WHEN messages.sender_id != $1
+              THEN sender_id
+              ELSE receiver_id END
+            AS other_user
+          FROM messages
+        ) AS msg2
+        ON msg2.created_at = msg1.created_at AND msg1.other_user = msg2.other_user
+      )
+      SELECT
+        users.id,
+        users.first_name AS "firstName",
+        users.is_online AS "isOnline",
+        JSON_BUILD_OBJECT(
+          'id', messages.id,
+          'senderId', messages.sender_id,
+          'receiverId', messages.receiver_id,
+          'content', messages.content,
+          'createdAt', messages.created_at
+        ) AS "lastMessage",
+        images.path AS "profilePicture"
+      FROM all_ids
+      INNER JOIN users ON users.id = all_ids.other_user
+      INNER JOIN messages ON messages.id = all_ids.id
+      INNER JOIN images ON users.id = images.user_id
+      WHERE images.is_profile = true
+      `;
+
+      const users = await PostgresService.query(
+        queryText,
+        [userId],
+        inTransaction,
+      );
+
+      return users.rows;
+    } catch (err) {
+      return console.log(err);
+    }
+  }
 }

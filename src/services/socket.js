@@ -65,6 +65,9 @@ export default class SocketService {
 
   static async checkSession(cookiesStr) {
     const cookies = cookie.parse(cookiesStr);
+    if (!cookies['connect.sid']) {
+      throw new ErrException({ id: 'not-connected', description: 'Not connected' });
+    }
     const sessionCookieSigned = cookies['connect.sid'].split('s:')[1];
     const sid = cookieSign.unsign(
       sessionCookieSigned,

@@ -22,4 +22,13 @@ export default class UserService {
       throw new ErrException({ id: 'fatal_error', description: 'could not fetch Profile infos' });
     }
   }
+
+  static async getMatchesWithLastMessage(userId) {
+    try {
+      const users = await User.getUserWithLastMessage(userId);
+      return (users);
+    } catch (err) {
+      throw new ErrException({ id: 'fatal_error', description: 'could not fetch users with last messages' });
+    }
+  }
 }
