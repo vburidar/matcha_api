@@ -367,7 +367,8 @@ export default class User {
       log(1 + (exp(1) - 1) * (common_interests::float / $4)) AS score_interest,
       1 / (exp(abs($5 - EXTRACT (YEAR FROM AGE(users.birthdate)))/10)) as score_age,
       1 / (exp(distance / 10)) AS score_distance,
-      log(1 + 1.7 * (common_interests::float / $4)) + 1 / (exp(abs($5 - EXTRACT (YEAR FROM AGE(users.birthdate)))/10)) + 1 / (exp(distance / 10)) AS score
+      users.popularity_score::float / 100 as score_popularity,
+      users.popularity_score::float / 100 + log(1 + 1.7 * (common_interests::float / $4)) + 1 / (exp(abs($5 - EXTRACT (YEAR FROM AGE(users.birthdate)))/10)) + 1 / (exp(distance / 10)) AS score
     FROM users
     
     INNER JOIN
