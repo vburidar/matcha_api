@@ -34,4 +34,22 @@ export default class UserService {
       throw new ErrException({ id: 'fatal_error', description: 'could not check if profile is complete' });
     }
   }
+
+  static async createMessage(userId, receiverId, content) {
+    try {
+      const message = await User.addMessage(userId, receiverId, content);
+      return (message);
+    } catch (err) {
+      throw new ErrException({ id: 'bad_request', description: 'could not insert message in database' });
+    }
+  }
+
+  static async getMessages(userId, talkerId) {
+    try {
+      const messagesList = await User.getMessages(userId, talkerId);
+      return (messagesList);
+    } catch (err) {
+      throw new ErrException({ id: 'bad_request', description: 'could not fetch message List' });
+    }
+  }
 }

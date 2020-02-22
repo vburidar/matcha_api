@@ -23,7 +23,6 @@ export default (app) => {
     }),
     async (req, res, next) => {
       try {
-        console.log(req.body);
         const user = await AuthService.signup(req.body);
         return res.status(200).send(user);
       } catch (err) {
