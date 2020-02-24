@@ -15,9 +15,9 @@ export default class PopulateService {
     date1 = new Date(date1).getTime();
     date2 = new Date(date2).getTime();
     if (date1 > date2) {
-      return new Date(randomValueBetween(date2, date1)).toLocaleDateString();
+      return new Date(randomValueBetween(date2, date1));
     }
-    return new Date(randomValueBetween(date1, date2)).toLocaleDateString();
+    return new Date(randomValueBetween(date1, date2));
   }
 
   static createLocation() {
