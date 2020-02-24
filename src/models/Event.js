@@ -244,4 +244,26 @@ export default class User {
     WHERE id = $2`, [parseInt(score * 100), userId]);
     return (ret.rows[0]);
   }
+
+  static async createNotification(userId, receiverId, type) {
+    const ret = await PostgresService.query(`
+    INSERT into notifications
+    (sender_id, receiver_id, type)
+    VALUES ($1, $2, $3)`, [userId, receiverId, type]);
+    return (ret);
+  }
+
+  static async getNotifications(userId) {
+    const ret = await PostgresService.query(`
+    SELECT * FROM notifications
+    WHERE receiver_id = $1`, [userId]);
+    return (ret.rows);
+  }
+
+  static async updateNotification(notificationId) {
+    const ret = await PostgresService.query(`
+    UPDATE notifications SET read = TRUE
+    WHERE id = $1`, [notificationId]);
+    return (ret);
+  }
 }

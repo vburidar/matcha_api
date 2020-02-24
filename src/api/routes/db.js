@@ -37,7 +37,6 @@ export default (app) => {
     '/populate',
     async (req, res, next) => {
       try {
-        //DbService.populateDatabase();
         PopulateService.populate();
         return res.status(200).send('SUCCESS');
       } catch (err) {

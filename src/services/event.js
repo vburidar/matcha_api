@@ -102,4 +102,31 @@ export default class EventService {
       throw new ErrException({ id: 'invalid_request', description: 'could not fetch list event' });
     }
   }
+
+  static async createNotification(userId, receiverId, type) {
+    try {
+      const notification = await Event.createNotification(userId, receiverId, type);
+      return (notification);
+    } catch (err) {
+      throw new ErrException({ id: 'invalid_request', description: 'could not create notification' });
+    }
+  }
+
+  static async getNotifications(userId) {
+    try {
+      const list = await Event.getNotifications(userId);
+      return (list);
+    } catch (err) {
+      throw new ErrException({ id: 'invalid_request', description: 'could not fetch notifications list' });
+    }
+  }
+
+  static async updateNotification(notificationId) {
+    try {
+      const update = await Event.updateNotification(notificationId);
+      return (update);
+    } catch (err) {
+      throw new ErrException({ id: 'invalid_request', description: 'could not update notification' });
+    }
+  }
 }

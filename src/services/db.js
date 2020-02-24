@@ -97,8 +97,10 @@ export default class DbService {
       PRIMARY KEY (user_id, interest_id))`);
     client.query(`CREATE TABLE notifications (
       id serial PRIMARY KEY NOT NULL,
-      type notification NOT NULL,
-      event_id integer NOT NULL)`);
+      sender_id integer REFERENCES users(id) NOT NULL,
+      receiver_id integer REFERENCES users(id) NOT NULL,
+      read boolean DEFAULT FALSE,
+      type notification NOT NULL)`);
     client.query(`CREATE TABLE visits (
       receiver_id integer REFERENCES users(id),
       sender_id integer REFERENCES users(id),

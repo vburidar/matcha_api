@@ -98,5 +98,39 @@ export default (app) => {
       }
     });
 
+  route.post('/notifications',
+    authValidator(true),
+    async (req, res, next) => {
+      try {
+        const notification = await (EventService.createNotification(req.session.user_id, 
+          req.body.receiverId, req.body.type));
+        return res.status(200).send(notification);
+      } catch (err) {
+        return next(err);
+      }
+    });
+
+  route.get('/notifications',
+    authValidator(true),
+    async (req, res, next) => {
+      try {
+        const list = await (EventService.getNotifications(req.session.user_id));
+        return res.status(200).send(list);
+      } catch (err) {
+        return next(err);
+      }
+    });
+
+  route.patch('/notifications',
+    authValidator(true),
+    async (req, res, next) => {
+      try {
+        const update = await (EventService.updateNotification(req.body.notificationId));
+        return res.status(200).send(update);
+      } catch (err) {
+        return next(err);
+      }
+    });
+
   app.use(errorHandler);
 };
