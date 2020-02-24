@@ -1,11 +1,34 @@
 import PostgresService from '../services/postgres';
-import UserService from '../services/users';
 
 export default class User {
   static async createLike(visitedId, visitorId) {
     const user = await PostgresService.pool.query(`
     INSERT INTO likes (receiver_id, sender_id) VALUES ($1, $2)`, [visitedId, visitorId]);
     return user;
+  }
+
+  static async getMatches(userId) {
+    const matches = await PostgresService.pool.query(
+      `
+      WITH
+      receivers AS (
+        SELECT
+          receiver_id
+        FROM likes
+        WHERE likes.sender_id = $1
+      ),
+      senders AS (
+        SELECT
+          sender_id
+        FROM likes
+        WHERE likes.receiver_id = $1
+      )
+      SELECT receiver_id AS id FROM receivers
+      INNER JOIN senders ON senders.sender_id = receivers.receiver_id    
+      `,
+      [userId],
+    );
+    return matches.rows;
   }
 
   static async createBlock(visitedId, visitorId) {
@@ -21,9 +44,20 @@ export default class User {
   }
 
   static async createVisit(visitedId, visitorId) {
-    const visit = await PostgresService.pool.query(`
-    INSERT INTO visits (receiver_id, sender_id) VALUES ($1, $2)`, [visitedId, visitorId]);
-    return visit;
+    const visit = await PostgresService.pool.query(
+      `
+      INSERT INTO visits (receiver_id, sender_id)
+      SELECT $1, $2
+      WHERE NOT EXISTS (
+          SELECT *
+          FROM visits
+          WHERE receiver_id = $1 AND sender_id = $2
+      )
+      RETURNING *
+      `,
+      [visitedId, visitorId],
+    );
+    return visit.rows[0];
   }
 
   static async deleteLike(visitedId, visitorId) {

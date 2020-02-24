@@ -91,7 +91,7 @@ export default (app) => {
     authValidator(true),
     async (req, res, next) => {
       try {
-        const messagesList = await UserService.getMessages(req.session.user_id, req.body.talkerId);
+        const messagesList = await UserService.getMessages(req.session.user_id, req.query.talkerId);
         return (res.status(200).send(messagesList));
       } catch (err) {
         return next(err);

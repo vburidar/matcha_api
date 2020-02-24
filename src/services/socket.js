@@ -6,6 +6,8 @@ import config from '../config';
 import { ErrException } from '../api/middlewares/errorHandler';
 
 import User from '../models/User';
+import UserService from './users';
+import Event from '../models/Event';
 import PostgresService from './postgres';
 
 export default class SocketService {
@@ -29,19 +31,62 @@ export default class SocketService {
           console.log('connection');
         }
 
-
-        console.log('CONNECTED');
         const user = await this.checkSession(socket.handshake.headers.cookie);
         socket.userId = user.id;
 
-        console.log(socket.userId);
+        console.log('User : ', socket.userId);
 
         User.update(user.id, { is_online: true }, { inTransaction: false });
 
-        socket.join('general');
-        // socket.on('connect', async () => {
-        //   console.log('CONNECTED');
-        // });
+        /** Get user matches to join channels */
+        const matches = await Event.getMatches(user.id);
+        matches.forEach((match) => {
+          socket.join(`/${Math.min(match.id, user.id)}-${Math.max(match.id, user.id)}`);
+        });
+
+        /** Join channel for self only */
+        socket.join(`/${user.id}`);
+        // socket.join('/general');
+
+        /** createMessage */
+        socket.on('createMessage', async ({ receiverId, content }) => {
+          const message = await UserService.createMessage(
+            user.id,
+            receiverId,
+            content,
+          );
+
+          this.io
+            .to(`/${Math.min(receiverId, user.id)}-${Math.max(receiverId, user.id)}`)
+            .emit('messageReceived', { message });
+        });
+
+        /** createVisit */
+        socket.on('createVisit', async ({ receiverId }) => {
+          const visit = await Event.createVisit(
+            receiverId,
+            user.id,
+          );
+
+          if (typeof visit !== 'undefined') {
+            console.log('create visit notification')
+            // const visitNotification = await Event.createVisitNotification(
+            //   receiverId,
+            //   user.id,
+            // );
+          }
+
+          this.io
+            .to(`/${receiverId}`)
+            .emit('notificationReceived', { visitNotification: 'here will be the visit notification' });
+        });
+
+        /** getNotifications */
+        socket.on('getNotifications', async () => {
+          const notificationsQueryRes = await Event.getListEvent(user.id);
+          const notifications = notificationsQueryRes.rows;
+          socket.emit('allNotifications', { notifications });
+        });
 
 
         /** Disconnection */

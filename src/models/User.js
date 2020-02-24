@@ -533,7 +533,7 @@ export default class User {
   static async addMessage(userId, receiverId, content) {
     const message = await PostgresService.query(`
     INSERT INTO messages (sender_id, receiver_id, content)
-    VALUES ($1, $2, $3)`, [userId, receiverId, content]);
-    return (message);
+    VALUES ($1, $2, $3) RETURNING *`, [userId, receiverId, content]);
+    return message.rows[0];
   }
 }

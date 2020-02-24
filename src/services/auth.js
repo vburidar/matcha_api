@@ -21,7 +21,7 @@ export default class AuthService {
           subject: 'Subscription to Match Point',
           html: `Congratulations!<br/>
           You just subscribed to Match Point<br/>
-          Click on <a href="http://localhost:3000/validateAccount/${userInput.login}/${this.hashPwdWithSalt(userInput.login, salt)}">
+          Click on <a href="http://localhost:3000/validate-account/${userInput.login}/${this.hashPwdWithSalt(userInput.login, salt)}">
           this link</a>to validate your account<br/> 
           Connect to your account to start meeting and dating!`,
         };
@@ -88,7 +88,7 @@ export default class AuthService {
           to: userInput.email,
           subject: 'Reset your Match Point password',
           html: `${`Hello!<br/>
-          You can reset your password <a href=http://localhost:3000/resetPwd/`}${user.login}/${this.hashPwdWithSalt(userInput.email, user.salt)}>
+          You can reset your password <a href=http://localhost:3000/reset-password/`}${user.login}/${this.hashPwdWithSalt(userInput.email, user.salt)}>
           here</a>! 
           See you soon on MatchPoint!`,
         };
