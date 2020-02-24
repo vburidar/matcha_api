@@ -78,7 +78,7 @@ export default class PopulateService {
       tab[cmp].pwdData = AuthService.hashPwd('Qwerty123');
       tab[cmp].birthdate = this.randomDate('01/01/1988', '01/01/1998');
       tab[cmp].validated = true;
-      tab[cmp].description = 'beep bop I am a bot';
+      tab[cmp].description = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean eu risus vitae arcu elementum molestie sed quis enim. Mauris facilisis nisl ac placerat pulvinar. Aenean vel leo lobortis, rhoncus mi sollicitudin, mattis mi. Praesent ac pulvinar leo, sed consequat ligula. Aliquam erat volutpat. Curabitur volutpat nisl ut nulla lacinia, ac varius velit aliquam. Nulla et semper justo. Cras eleifend, ligula sit amet auctor ultricies, purus nisl ornare tortor, ut vestibulum odio nisl a felis.';
       tab[cmp].popularityScore = 0;
       tab[cmp].locations = this.createLocation();
       tab[cmp].interests = this.createInterests();
@@ -218,6 +218,7 @@ export default class PopulateService {
     return ({ request: requestInterest, tab: tabRequest, id: cmpVarRequest });
   }
 
+
   static createRequest(partitionUser) {
     const requestUser = this.createRequestUser(partitionUser, 0);
     const requestLocation = this.createRequestLocation(partitionUser, requestUser.id);
@@ -231,14 +232,70 @@ export default class PopulateService {
   static async generateLike(userLogin) {
     const list = await Populate.getSuggestionList(userLogin);
     const arr = [];
+    const ret = [];
     const nbLikeSent = Math.ceil(list.rows.length / 10);
     while (arr.length < nbLikeSent) {
       const r = Math.floor(Math.random() * list.rows.length);
       if (arr.indexOf(r) === -1) arr.push(r);
     }
     arr.map(async (elem) => {
-      await Populate.createLike(userLogin, list.rows[elem].user_id);
+      ret.push(userLogin, list.rows[elem].user_id);
     });
+    return (ret);
+  }
+
+  static async createRequestLike(tabPromise) {
+    const tabLike = tabPromise.reduce((accumulator, currentTab) => [
+      ...accumulator,
+      ...currentTab,
+    ], []);
+    let requestLike = `
+    WITH virtual_user AS (
+      SELECT login, id FROM users
+    )
+    INSERT into likes (sender_id, receiver_id) VALUES `;
+    tabLike.map((elem, idx) => {
+      if (idx % 2 === 0) {
+        requestLike += `((SELECT id FROM virtual_user WHERE login = $${idx + 1}), $${idx + 2})`;
+        if (idx !== tabLike.length - 2) {
+          requestLike += ',';
+        }
+      }
+    });
+    if (tabLike[0]) {
+      return ({ request: requestLike, tab: tabLike });
+    }
+    return (null);
+  }
+
+  static async partitionRequest(type, partitionSize, nUsers, tab) {
+    let cmp = 0;
+    let request = '';
+    let nPartition = 0;
+    while (cmp < nUsers) {
+      if (cmp % partitionSize === 0 && cmp !== 0) {
+        const partitionUser = tab.slice(nPartition * partitionSize, cmp);
+        if (type === 'user') {
+          request = this.createRequest(partitionUser);
+        } else if (type === 'like') {
+          request = await this.createRequestLike(partitionUser);
+        } else {
+          return (null);
+        }
+        if (request) { await PostgresService.query(request.request, request.tab); }
+        nPartition += 1;
+      }
+      cmp += 1;
+    }
+    const partitionUser = tab.slice(nPartition * partitionSize, cmp);
+    if (type === 'user') {
+      request = this.createRequest(partitionUser);
+    } else if (type === 'like') {
+      request = await this.createRequestLike(partitionUser);
+    } else {
+      return (null);
+    }
+    if (request) { await PostgresService.query(request.request, request.tab); }
     return (null);
   }
 
@@ -246,23 +303,15 @@ export default class PopulateService {
     await Populate.insertInterests();
     const nUsers = 1000;
     const partitionSize = 100;
-    let nPartition = 0;
     const tabUser = this.createNUsers(nUsers);
-    let cmp = 0;
-    while (cmp < nUsers) {
-      if (cmp % partitionSize === 0 && cmp !== 0) {
-        const partitionUser = tabUser.slice(nPartition * partitionSize, cmp);
-        const bigRequest = this.createRequest(partitionUser);
-        await PostgresService.query(bigRequest.request, bigRequest.tab);
-        nPartition += 1;
-      }
-      cmp += 1;
-    }
-    const partitionUser = tabUser.slice(nPartition * partitionSize, cmp);
-    const bigRequest = this.createRequest(partitionUser);
-    await PostgresService.query(bigRequest.request, bigRequest.tab);
-    tabUser.map(async (elem) => {
+    await this.partitionRequest('user', partitionSize, nUsers, tabUser);
+    const tabPromise = await Promise.all(tabUser.map(async (elem) => {
       this.generateLike(elem.login);
+      return (this.generateLike(elem.login));
+    }));
+    await this.partitionRequest('like', partitionSize, nUsers, tabPromise);
+    tabUser.map(async (elem) => {
+      await Populate.computePopularityScore(elem.login);
     });
   }
 }

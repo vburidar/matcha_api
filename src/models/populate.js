@@ -75,4 +75,62 @@ export default class Populate {
       INSERT INTO likes (receiver_id, sender_id) VALUES ((SELECT id FROM virtual_user) , $2)`, [visitorLogin, visitedId]);
     return (like);
   }
+
+  static async computePopularityScore(userLogin) {
+    const popularityScore = await PostgresService.query(`
+    WITH virtual_user AS (SELECT 
+      id FROM users
+      WHERE login = $1),
+    
+    virtual_event AS (
+    SELECT
+            CASE WHEN sent.nb_likes_sent::INTEGER IS NULL THEN 1 ELSE sent.nb_likes_sent END,
+            CASE WHEN received.nb_likes_received::INTEGER IS NULL THEN 0 ELSE received.nb_likes_received END,
+            CASE WHEN totallikes.nb_match IS NULL THEN 0 ELSE totallikes.nb_match END
+          FROM (
+          SELECT
+            sender_id,
+            COUNT(*) as nb_likes_sent
+          FROM likes
+          WHERE sender_id = (SELECT id FROM virtual_user)
+          GROUP BY sender_id) AS sent
+          
+          FULL OUTER JOIN
+          
+          (SELECT 
+            receiver_id,
+            COUNT(*) as nb_likes_received
+          FROM likes
+          WHERE receiver_id = (SELECT id FROM virtual_user)
+          GROUP BY receiver_id) AS received
+    
+          ON sent.sender_id = received.receiver_id
+          
+          FULL OUTER JOIN
+    
+          (SELECT 
+            count(*) AS nb_match,
+            (SELECT id FROM virtual_user) as user_id
+            FROM (
+            SELECT * FROM likes AS likes1
+            INNER JOIN (
+              SELECT * FROM likes
+            ) AS likes2
+            ON likes1.sender_id = likes2.receiver_id
+            WHERE likes1.receiver_id = (SELECT id FROM virtual_user) AND likes2.sender_id = (SELECT id FROM virtual_user) AND likes2.created_at < likes1.created_at
+          ) AS totallikes) AS totallikes
+    
+          ON totallikes.user_id = sent.sender_id),
+          
+          virtual_score AS (
+          SELECT 
+          nb_match::float / nb_likes_sent::float
+          + nb_likes_received::float / (nb_likes_sent::float + nb_likes_received::float) AS score 
+          FROM virtual_event)
+          
+          UPDATE users
+          SET popularity_score = (SELECT score FROM virtual_score) * 50
+          WHERE login= $1`, [userLogin]);
+    return (popularityScore);
+  }
 }
