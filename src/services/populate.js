@@ -78,7 +78,7 @@ export default class PopulateService {
       tab[cmp].pwdData = AuthService.hashPwd('Qwerty123');
       tab[cmp].birthdate = this.randomDate('01/01/1988', '01/01/1998');
       tab[cmp].validated = true;
-      tab[cmp].description = 'beep bop I am a bot';
+      tab[cmp].description = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aenean eu risus vitae arcu elementum molestie sed quis enim. Mauris facilisis nisl ac placerat pulvinar. Aenean vel leo lobortis, rhoncus mi sollicitudin, mattis mi. Praesent ac pulvinar leo, sed consequat ligula. Aliquam erat volutpat. Curabitur volutpat nisl ut nulla lacinia, ac varius velit aliquam. Nulla et semper justo. Cras eleifend, ligula sit amet auctor ultricies, purus nisl ornare tortor, ut vestibulum odio nisl a felis.';
       tab[cmp].popularityScore = 0;
       tab[cmp].locations = this.createLocation();
       tab[cmp].interests = this.createInterests();
@@ -301,8 +301,8 @@ export default class PopulateService {
 
   static async populate() {
     await Populate.insertInterests();
-    const nUsers = 10000;
-    const partitionSize = 1000;
+    const nUsers = 1000;
+    const partitionSize = 100;
     const tabUser = this.createNUsers(nUsers);
     await this.partitionRequest('user', partitionSize, nUsers, tabUser);
     const tabPromise = await Promise.all(tabUser.map(async (elem) => {
