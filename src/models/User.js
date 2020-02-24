@@ -238,6 +238,18 @@ export default class User {
 
   static async getProfileCompleteInfo(visitedId, visitor) {
     const profile = await PostgresService.pool.query(`
+      WITH virtual_interest AS (
+        SELECT COUNT(*) AS nb_common_interest FROM (SELECT * FROM  users_interests
+        WHERE user_id = $4) AS int1
+
+        INNER JOIN
+
+        (SELECT * FROM users_interests
+        WHERE user_id = $1) AS int2
+
+        ON int1.interest_id = int2.interest_id
+      )  
+
       SELECT 
         users.id,
         users.first_name,
@@ -247,11 +259,15 @@ export default class User {
         image_profile.path,
         locations.latitude,
         locations.longitude,
+        popularity_score,
+        log(1 + (exp(1) - 1) * ((SELECT nb_common_interest::float FROM virtual_interest) / $6)) AS score_interest,
         CASE WHEN visitor_received_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visited_liked_visitor,
         CASE WHEN visitor_received_block.sender_id IS NULL THEN FALSE ELSE TRUE END as visited_blocked_visitor,
         CASE WHEN visitor_sent_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visitor_liked_visited,
         CASE WHEN visitor_sent_block.sender_id IS NULL THEN FALSE ELSE TRUE END as visitor_blocked_visited,
         111 * |/((latitude - $2)^2 + (longitude - $3)^2) AS distance,
+        1 / (exp(abs($5 - EXTRACT (YEAR FROM AGE(users.birthdate)))/10)) as score_age,
+        1 / (exp((111 * |/((latitude - $2)^2 + (longitude - $3)^2)) / 10)) AS score_distance,
         users_interests.nb_interests AS nb_interests,
         users_interests.list_interests,
         EXTRACT (YEAR FROM AGE(users.birthdate)) AS age,
@@ -300,7 +316,9 @@ export default class User {
       
       INNER JOIN (SELECT * FROM images WHERE is_profile = TRUE) as image_profile
       ON image_profile.user_id = users.id
-      WHERE users.id = $1`, [visitedId, visitor.latitude, visitor.longitude, visitor.id]);
+      WHERE users.id = $1`, [visitedId, visitor.latitude, visitor.longitude, visitor.id, visitor.age,
+      visitor.nb_interests]);
+    console.log(profile.rows);
     return (profile);
   }
 
@@ -310,6 +328,7 @@ export default class User {
         users.id,
         locations.latitude,
         locations.longitude,
+        popularity_score,
         users_interests.nb_interests AS nb_interests,
         EXTRACT (YEAR FROM AGE(users.birthdate)) AS age,
         users.sexual_preference,
@@ -362,8 +381,7 @@ export default class User {
       users.sexual_preference::bit(4) AS pref_receiver,
       $7::int as gender_sender,
       $6::int as pref_sender,
-      abs($5 - EXTRACT (YEAR FROM AGE(users.birthdate))) as age_difference,
-      
+      abs($5 - EXTRACT (YEAR FROM AGE(users.birthdate))) as age_difference,  
       log(1 + (exp(1) - 1) * (common_interests::float / $4)) AS score_interest,
       1 / (exp(abs($5 - EXTRACT (YEAR FROM AGE(users.birthdate)))/10)) as score_age,
       1 / (exp(distance / 10)) AS score_distance,
