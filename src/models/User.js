@@ -555,4 +555,71 @@ export default class User {
     VALUES ($1, $2, $3) RETURNING *`, [userId, receiverId, content]);
     return message.rows[0];
   }
+
+  static async getLocation(userId) {
+    console.log('userId =', userId);
+    const location = await PostgresService.query(`
+    SELECT
+      latitude,
+      longitude
+    FROM users
+    
+    INNER JOIN locations
+    ON users.id = locations.user_id
+    WHERE locations.is_active = TRUE
+    AND users.id = $1`, [userId]);
+    console.log(location.rows[0]);
+    return (location.rows[0]);
+  }
+
+  static async getCustomList(userId, location, data) {
+    console.log(data);
+    const list = await PostgresService.query(`
+    SELECT * FROM(
+    SELECT
+      users.first_name,
+      users.popularity_score,
+      users.description,
+      users.gender,
+      users.sexual_preference,
+      locations.distance,
+      interests.name,
+      EXTRACT (YEAR FROM AGE(users.birthdate)) AS age
+    FROM users
+    
+    INNER JOIN
+    ((SELECT user_id, interest_id FROM users_interests) as users_interests
+      INNER JOIN (SELECT * FROM interests WHERE interests.name = $9) as t1
+      ON users_interests.interest_id = t1.id) AS interests
+    ON users.id = interests.user_id
+
+    INNER JOIN
+      (SELECT 
+        user_id,
+        111 * |/((latitude - $1)^2 + (longitude - $2)^2) as distance
+      FROM locations
+      WHERE 111 * |/((latitude - $1)^2 + (longitude - $2)^2) < $3) AS locations
+    ON users.id = locations.user_id
+    ) AS profile
+    WHERE profile.age >= $4 AND profile.age <= $5
+    AND profile.popularity_score >= $6 AND profile.popularity_score <= $7
+    ORDER BY
+        CASE WHEN $8 = 'distance' THEN distance END,
+        CASE WHEN $8 = 'ageasc' THEN age END
+    ASC,
+      CASE WHEN $8 = 'agedesc' THEN age END,
+      CASE WHEN $8 = 'popularity' THEN popularity_score END
+    DESC
+`, [location.latitude,
+      location.longitude,
+      parseInt(data.distance, 10),
+      data.age[0],
+      data.age[1],
+      data.popularity[0],
+      data.popularity[1],
+      data.order,
+      'archery']);
+    console.log(list.rows);
+    return (list);
+  }
 }
