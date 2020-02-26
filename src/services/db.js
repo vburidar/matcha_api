@@ -100,7 +100,8 @@ export default class DbService {
       sender_id integer REFERENCES users(id) NOT NULL,
       receiver_id integer REFERENCES users(id) NOT NULL,
       read boolean DEFAULT FALSE,
-      type notification NOT NULL)`);
+      type notification NOT NULL,
+      created_at timestamptz NOT NULL default NOW())`);
     client.query(`CREATE TABLE visits (
       receiver_id integer REFERENCES users(id),
       sender_id integer REFERENCES users(id),

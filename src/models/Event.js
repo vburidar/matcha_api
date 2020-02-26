@@ -1,9 +1,11 @@
 import PostgresService from '../services/postgres';
 
 export default class User {
-  static async createLike(visitedId, visitorId) {
-    const user = await PostgresService.pool.query(`
-    INSERT INTO likes (receiver_id, sender_id) VALUES ($1, $2)`, [visitedId, visitorId]);
+  static async createLike(receiverId, senderId) {
+    const user = await PostgresService.query(
+      'INSERT INTO likes (receiver_id, sender_id) VALUES ($1, $2) RETURNING *',
+      [receiverId, senderId],
+    );
     return user;
   }
 
@@ -48,11 +50,6 @@ export default class User {
       `
       INSERT INTO visits (receiver_id, sender_id)
       SELECT $1, $2
-      WHERE NOT EXISTS (
-          SELECT *
-          FROM visits
-          WHERE receiver_id = $1 AND sender_id = $2
-      )
       RETURNING *
       `,
       [visitedId, visitorId],
@@ -162,20 +159,18 @@ export default class User {
         totallikes.nb_match
       FROM (
       SELECT
-        sender_id,
+        $1::integer AS sender_id,
         COUNT(*) as nb_likes_sent
       FROM likes
-      WHERE sender_id = $1
-      GROUP BY sender_id) AS sent
+      WHERE sender_id = $1) AS sent
       
       INNER JOIN 
       
       (SELECT 
-        receiver_id,
+        $1::integer AS receiver_id,
         COUNT(*) as nb_likes_received
       FROM likes
-      WHERE receiver_id = $1
-      GROUP BY receiver_id) AS received
+      WHERE receiver_id = $1) AS received
 
       ON sent.sender_id = received.receiver_id
       
@@ -183,7 +178,7 @@ export default class User {
 
       (SELECT 
         count(*) AS nb_match,
-        $1 as user_id
+        $1::integer AS user_id
         FROM (
         SELECT * FROM likes AS likes1
         INNER JOIN (
@@ -246,11 +241,33 @@ export default class User {
   }
 
   static async createNotification(userId, receiverId, type) {
-    const ret = await PostgresService.query(`
-    INSERT into notifications
-    (sender_id, receiver_id, type)
-    VALUES ($1, $2, $3)`, [userId, receiverId, type]);
-    return (ret);
+    const notification = await PostgresService.query(
+      `
+      WITH
+        newone AS (
+          INSERT INTO notifications (receiver_id, sender_id, type)
+          VALUES ($1, $2, $3)
+          RETURNING *
+        )
+      SELECT
+        newone.id,
+        newone.sender_id AS "senderId",
+        newone.receiver_id AS "receiverId",
+        newone.read,
+        newone.type,
+        newone.created_at AS "createdAt",
+        users.first_name AS "firstName",
+        EXTRACT (YEAR FROM AGE (NOW(), created_at)) AS "yearsSince",
+        EXTRACT (MONTH FROM AGE (NOW(), created_at)) AS "monthsSince",
+        EXTRACT (DAY FROM AGE (NOW(), created_at)) AS "daysSince",
+        EXTRACT (HOUR FROM AGE (NOW(), created_at)) AS "hoursSince",
+        EXTRACT (MINUTE FROM AGE (NOW(), created_at)) AS "minuteSince"
+      FROM newone
+      INNER JOIN users ON newone.sender_id = users.id
+      `,
+      [userId, receiverId, type],
+    );
+    return notification.rows[0];
   }
 
   static async getNotifications(userId) {
@@ -265,5 +282,58 @@ export default class User {
     UPDATE notifications SET read = TRUE
     WHERE id = $1`, [notificationId]);
     return (ret);
+  }
+
+  static async getAllNotificationsFromUser(userId) {
+    const notifications = await PostgresService.query(
+      `SELECT
+        notifications.id,
+        notifications.sender_id AS "senderId",
+        notifications.receiver_id AS "receiverId",
+        notifications.read,
+        notifications.type,
+        notifications.created_at AS "createdAt",
+        users.first_name AS "firstName",
+        EXTRACT (YEAR FROM AGE (NOW(), created_at)) AS "yearsSince",
+        EXTRACT (MONTH FROM AGE (NOW(), created_at)) AS "monthsSince",
+        EXTRACT (DAY FROM AGE (NOW(), created_at)) AS "daysSince",
+        EXTRACT (HOUR FROM AGE (NOW(), created_at)) AS "hoursSince",
+        EXTRACT (MINUTE FROM AGE (NOW(), created_at)) AS "minuteSince"
+      FROM notifications
+      INNER JOIN users ON users.id = notifications.sender_id
+      WHERE receiver_id = $1
+      ORDER BY notifications.created_at DESC`,
+      [userId],
+    );
+    return notifications.rows;
+  }
+
+  static async markAllNotificationsAsRead(userId) {
+    const notifications = await PostgresService.query(
+      `WITH
+      notif AS (
+        UPDATE notifications SET read = TRUE
+        WHERE receiver_id = $1
+        RETURNING *
+      )
+      SELECT
+        notif.id,
+        notif.sender_id AS "senderId",
+        notif.receiver_id AS "receiverId",
+        notif.read,
+        notif.type,
+        notif.created_at AS "createdAt",
+        users.first_name AS "firstName",
+        EXTRACT (YEAR FROM AGE (NOW(), created_at)) AS "yearsSince",
+        EXTRACT (MONTH FROM AGE (NOW(), created_at)) AS "monthsSince",
+        EXTRACT (DAY FROM AGE (NOW(), created_at)) AS "daysSince",
+        EXTRACT (HOUR FROM AGE (NOW(), created_at)) AS "hoursSince",
+        EXTRACT (MINUTE FROM AGE (NOW(), created_at)) AS "minuteSince"
+      FROM notif
+      INNER JOIN users ON users.id = notif.sender_id
+      ORDER BY notif.created_at DESC`,
+      [userId],
+    );
+    return notifications.rows;
   }
 }

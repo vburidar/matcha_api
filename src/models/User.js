@@ -469,6 +469,7 @@ export default class User {
               ELSE receiver_id END
             AS other_user
           FROM messages
+          WHERE messages.sender_id = $1 OR messages.receiver_id = $1
           GROUP BY other_user
         ) AS msg1
         INNER JOIN (
@@ -481,6 +482,7 @@ export default class User {
               ELSE receiver_id END
             AS other_user
           FROM messages
+          WHERE messages.sender_id = $1 OR messages.receiver_id = $1
         ) AS msg2
         ON msg2.created_at = msg1.created_at AND msg1.other_user = msg2.other_user
       )
@@ -536,5 +538,10 @@ export default class User {
     INSERT INTO messages (sender_id, receiver_id, content)
     VALUES ($1, $2, $3) RETURNING *`, [userId, receiverId, content]);
     return message.rows[0];
+  }
+
+  static async getUsersConnected() {
+    const userIds = await PostgresService.query('SELECT ARRAY_AGG(id) AS ids FROM users WHERE is_online = true');
+    return userIds.rows[0].ids;
   }
 }
