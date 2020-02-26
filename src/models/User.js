@@ -637,8 +637,13 @@ export default class User {
       data.age[1],
       data.popularity[0],
       data.popularity[1],
-      data.order];
-    let request = `SELECT * FROM(
+      data.order,
+      userId];
+    let request = `
+    WITH virtual_user AS (
+      SELECT * FROM users WHERE id = $9
+    )
+    SELECT * FROM(
     SELECT
       users.first_name,
       users.id as user_id,
@@ -648,7 +653,8 @@ export default class User {
       users.sexual_preference,
       locations.distance,
       interests.list_all_interests,
-      '' as list_interests,
+      interests_2.list_interests,
+      CASE WHEN interests_2.common_interests IS NULL THEN 0 ELSE interests_2.common_interests END,
       images_not_profile.list_images,
       image_profile.path,
       EXTRACT (YEAR FROM AGE(users.birthdate)) AS age
@@ -658,7 +664,7 @@ export default class User {
       data.interest.map((elem, idx) => {
         request += `INNER JOIN
       ((SELECT user_id, interest_id FROM users_interests) as users_int${idx}
-        INNER JOIN (SELECT * FROM interests WHERE interests.name = $${idx + 9}) as int${idx}
+        INNER JOIN (SELECT * FROM interests WHERE interests.name = $${idx + 10}) as int${idx}
         ON users_int${idx}.interest_id = int${idx}.id) AS interests${idx}
       ON users.id = interests${idx}.user_id `;
         tab.push(elem);
@@ -666,15 +672,44 @@ export default class User {
     }
 
     request += `
-    INNER JOIN (
-      SELECT user_id,
+    FULL OUTER JOIN
+      
+      (SELECT
+        user_id,
+        COUNT (*) AS common_interests,
+        ARRAY_TO_STRING(ARRAY_AGG(interests.name), ',') AS list_interests
+      FROM
+        (SELECT * FROM users_interests WHERE user_id != $9) AS test1
+
+      INNER JOIN
+        (SELECT interest_id FROM users_interests WHERE user_id = $9) AS test2
+      ON test1.interest_id = test2.interest_id
+
+      INNER JOIN interests ON test2.interest_id = interests.id
+ 
+      GROUP BY user_id) AS interests_2
+
+    ON users.id = interests_2.user_id
+
+    INNER JOIN
+
+    (SELECT 
+      user_id,
       ARRAY_TO_STRING(ARRAY_AGG(name), ',') AS list_all_interests
-      FROM 
-      users_interests
-      INNER JOIN interests
-      ON users_interests.interest_id = interests.id
-      GROUP BY user_id) AS interests
-    ON interests.user_id = users.id
+        FROM
+          (SELECT * FROM
+            (SELECT interest_id, user_id FROM users_interests WHERE user_id != $9) AS others_interests
+  
+          FULL OUTER JOIN
+            (SELECT interest_id as my_interest, user_id as my_user_id FROM users_interests WHERE user_id = $9) AS my_interests
+          ON my_interests.my_interest = others_interests.interest_id
+          WHERE my_user_id IS NULL) AS other_interests
+  
+        INNER JOIN interests ON other_interests.interest_id = interests.id
+        GROUP BY other_interests.user_id) AS interests
+
+  ON interests.user_id = users.id
+
 
     FULL OUTER JOIN (
       SELECT user_id,
@@ -696,13 +731,13 @@ export default class User {
   ON users.id = locations.user_id) AS profile
   WHERE profile.age >= $4 AND profile.age <= $5
   AND profile.popularity_score >= $6 AND profile.popularity_score <= $7
+  AND profile.user_id != $9
   ORDER BY
-    CASE WHEN $8 = 'distance' THEN distance END,
-    CASE WHEN $8 = 'ageasc' THEN age END
-  ASC,
-    CASE WHEN $8 = 'agedesc' THEN age END,
-    CASE WHEN $8 = 'popularity' THEN popularity_score END
-  DESC`;
+    CASE WHEN $8 = 'distance' THEN distance END ASC,
+    CASE WHEN $8 = 'ageasc' THEN age END ASC,
+    CASE WHEN $8 = 'agedesc' THEN age END DESC,
+    CASE WHEN $8 = 'popularity' THEN popularity_score END DESC,
+    CASE WHEN $8 = 'commoninterests' THEN common_interests END DESC`;
     const list = await PostgresService.query(request, tab);
     console.log(list.rows);
     return (list.rows);
