@@ -95,7 +95,10 @@ export default class User {
     sender_id,
     first_name,
     user_id,
-    path
+    CASE
+      WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', path)
+      ELSE path
+    END
      FROM 
     (  
       SELECT

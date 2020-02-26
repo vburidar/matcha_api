@@ -186,7 +186,10 @@ export default class User {
           JSON_AGG(JSON_BUILD_OBJECT(
             'id', images.id,
             'isProfile', images.is_profile,
-            'path', images.path
+            'path', CASE
+                      WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', path)
+                      ELSE path
+                    END
           )) AS images
         FROM images
         GROUP BY images.user_id
@@ -256,7 +259,10 @@ export default class User {
         users.last_name,
         users.description,
         images_not_profile.list_images,
-        image_profile.path,
+        CASE
+          WHEN image_profile.path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', image_profile.path)
+          ELSE image_profile.path
+        END,
         locations.latitude,
         locations.longitude,
         popularity_score,
@@ -308,7 +314,12 @@ export default class User {
       
       FULL OUTER JOIN (
         SELECT user_id,
-        ARRAY_TO_STRING(ARRAY_AGG(path), ',') AS list_images
+        ARRAY_TO_STRING(ARRAY_AGG(
+          CASE
+            WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', path)
+            ELSE path
+          END
+        ), ',') AS list_images
         FROM images
         WHERE is_profile = FALSE
         GROUP BY user_id) AS images_not_profile
@@ -375,7 +386,10 @@ export default class User {
       interests_2.list_all_interests,
       locations.distance,
       images_not_profile.list_images,
-      image_profile.path,
+      CASE
+        WHEN image_profile.path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', image_profile.path)
+        ELSE image_profile.path
+      END,
       users.description,
       users.gender AS gender_receiver,
       users.sexual_preference::bit(4) AS pref_receiver,
@@ -398,7 +412,12 @@ export default class User {
 
     FULL OUTER JOIN (
       SELECT user_id,
-      ARRAY_TO_STRING(ARRAY_AGG(path), ',') AS list_images
+      ARRAY_TO_STRING(ARRAY_AGG(
+        CASE
+          WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', path)
+          ELSE path
+        END
+      ), ',') AS list_images
       FROM images
       WHERE is_profile = FALSE
       GROUP BY user_id) AS images_not_profile
@@ -515,7 +534,10 @@ export default class User {
           'content', messages.content,
           'createdAt', messages.created_at
         ) AS "lastMessage",
-        images.path AS "profilePicture"
+        CASE
+          WHEN images.path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', images.path)
+          ELSE images.path
+        END AS "profilePicture"
       FROM all_ids
       INNER JOIN users ON users.id = all_ids.other_user
       INNER JOIN messages ON messages.id = all_ids.id
