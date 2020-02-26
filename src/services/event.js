@@ -82,7 +82,7 @@ export default class EventService {
   }
 
   static async createVisit(visitedId, visitorId) {
-    if (visitedId != visitorId) {
+    if (visitedId !== visitorId) {
       try {
         const like = await Event.createVisit(visitedId, visitorId);
         return (like);

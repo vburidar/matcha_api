@@ -78,15 +78,17 @@ export default class SocketService {
             user.id,
           );
 
-          const notification = await Event.createNotification(
-            receiverId,
-            user.id,
-            'visit',
-          );
+          if (typeof visit !== 'undefined') {
+            const notification = await Event.createNotification(
+              receiverId,
+              user.id,
+              'visit',
+            );
 
-          this.io
-            .to(`/${receiverId}`)
-            .emit('notificationReceived', { notification });
+            this.io
+              .to(`/${receiverId}`)
+              .emit('notificationReceived', { notification });
+          }
         });
 
         /** createLike */

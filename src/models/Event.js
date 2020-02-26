@@ -50,6 +50,11 @@ export default class User {
       `
       INSERT INTO visits (receiver_id, sender_id)
       SELECT $1, $2
+      WHERE NOT EXISTS (
+        SELECT *
+        FROM visits
+        WHERE receiver_id = $1 AND sender_id = $2 AND created_at > (NOW() - INTERVAL '1 HOUR')
+      )
       RETURNING *
       `,
       [visitedId, visitorId],
