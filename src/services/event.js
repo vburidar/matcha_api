@@ -1,6 +1,5 @@
 import Event from '../models/Event';
 import { ErrException } from '../api/middlewares/errorHandler';
-import User from '../models/Event';
 
 export default class EventService {
   static createScore(likesReceived, likesSent, match) {

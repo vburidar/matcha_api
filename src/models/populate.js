@@ -124,8 +124,8 @@ export default class Populate {
           
           virtual_score AS (
           SELECT 
-          nb_match::float / nb_likes_sent::float
-          + nb_likes_received::float / (nb_likes_sent::float + nb_likes_received::float) AS score 
+          nb_match::float / (nb_likes_sent::float + 1)
+          + nb_likes_received::float / (nb_likes_sent::float + nb_likes_received::float + 1) AS score 
           FROM virtual_event)
           
           UPDATE users

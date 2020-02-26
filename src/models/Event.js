@@ -236,7 +236,7 @@ export default class User {
     const ret = await PostgresService.query(`
     UPDATE users
     SET popularity_score = $1
-    WHERE id = $2`, [parseInt(score * 100), userId]);
+    WHERE id = $2`, [parseInt(score * 100, 10), userId]);
     return (ret.rows[0]);
   }
 

@@ -61,4 +61,23 @@ export default class UserService {
       throw new ErrException({ id: 'bad_request', description: 'could not fetch message List' });
     }
   }
+
+  static async getListUsers(userId, data) {
+    let location = {};
+    const queryLocation = JSON.parse(data.location);
+    if (queryLocation.type === 'default') {
+      try {
+        location = await User.getLocation(userId);
+      } catch (err) {
+        throw new ErrException({ id: 'bad_request', description: 'could not fetch user location' });
+      }
+    } else {
+      location = { latitude: queryLocation.latitude, longitude: queryLocation.longitude };
+    }
+    try {
+      return (User.getCustomList(userId, location, data));
+    } catch (err) {
+      throw new ErrException({ id: 'bad_request', description: 'could not fetch custom user list' });
+    }
+  }
 }
