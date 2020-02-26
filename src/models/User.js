@@ -495,7 +495,20 @@ export default class User {
   static async getUserWithLastMessage(userId, { inTransaction = false } = {}) {
     try {
       const queryText = `
-      WITH all_ids AS
+      WITH
+receivers AS (
+  SELECT
+    receiver_id
+  FROM likes
+  WHERE likes.sender_id = $1
+),
+senders AS (
+  SELECT
+    sender_id
+  FROM likes
+  WHERE likes.receiver_id = $1
+),
+all_ids AS
       (
         SELECT id, msg1.other_user
         FROM (
@@ -523,26 +536,34 @@ export default class User {
         ) AS msg2
         ON msg2.created_at = msg1.created_at AND msg1.other_user = msg2.other_user
       )
-      SELECT
-        users.id,
-        users.first_name AS "firstName",
-        users.is_online AS "isOnline",
-        JSON_BUILD_OBJECT(
-          'id', messages.id,
-          'senderId', messages.sender_id,
-          'receiverId', messages.receiver_id,
-          'content', messages.content,
-          'createdAt', messages.created_at
-        ) AS "lastMessage",
-        CASE
-          WHEN images.path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', images.path)
-          ELSE images.path
-        END AS "profilePicture"
-      FROM all_ids
-      INNER JOIN users ON users.id = all_ids.other_user
-      INNER JOIN messages ON messages.id = all_ids.id
-      INNER JOIN images ON users.id = images.user_id
-      WHERE images.is_profile = true
+SELECT
+    match.id,
+    CASE
+      WHEN images.path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', images.path)
+      ELSE images.path
+    END AS "profilePicture",
+    users.is_online AS "isOnline",
+    JSON_BUILD_OBJECT(
+      'id', messages.id,
+      'senderId', messages.sender_id,
+      'receiverId', messages.receiver_id,
+      'content', messages.content,
+      'createdAt', messages.created_at
+    ) AS "lastMessage",
+    users.first_name as "firstName"
+FROM
+    (SELECT receiver_id AS id FROM receivers
+        INNER JOIN senders ON senders.sender_id = receivers.receiver_id) AS match
+    INNER JOIN
+    (SELECT
+        id,
+        is_online,
+        first_name FROM users) AS users
+    ON users.id = match.id
+    INNER JOIN (SELECT * FROM images WHERE is_profile = TRUE) AS images ON users.id = images.user_id
+    FULL OUTER JOIN all_ids ON all_ids.other_user = match.id
+    FULL OUTER JOIN messages ON all_ids.id = messages.id
+    WHERE match.id IS NOT NULL
       `;
 
       const users = await PostgresService.query(
@@ -550,7 +571,6 @@ export default class User {
         [userId],
         inTransaction,
       );
-
       return users.rows;
     } catch (err) {
       return console.log(err);
@@ -759,7 +779,8 @@ export default class User {
     CASE WHEN $8 = 'ageasc' THEN age END ASC,
     CASE WHEN $8 = 'agedesc' THEN age END DESC,
     CASE WHEN $8 = 'popularity' THEN popularity_score END DESC,
-    CASE WHEN $8 = 'commoninterests' THEN common_interests END DESC`;
+    CASE WHEN $8 = 'commoninterests' THEN common_interests END DESC
+  LIMIT 100  `;
     const list = await PostgresService.query(request, tab);
     console.log(list.rows);
     return (list.rows);
