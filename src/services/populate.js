@@ -1,5 +1,5 @@
 import {
-  names, firstNamesWoman, firstNamesMan, interests, locations,
+  names, firstNamesWoman, firstNamesMan, interests, locations, invalidPics,
 } from '../../populate_data/populate';
 import AuthService from './auth';
 import PostgresService from './postgres';
@@ -32,9 +32,21 @@ export default class PopulateService {
     };
   }
 
-  static createPic() {
-    const imageId = Math.floor(Math.random() * 1000) + 1;
-    return (`https://i.picsum.photos/id/${imageId}/500/500.jpg`);
+  static createTabPic() {
+    const tab = [];
+    let i = 1;
+    while (i < 1000) {
+      if (!invalidPics.includes(i)) {
+        tab.push(i);
+      }
+      i += 1;
+    }
+    return (tab);
+  }
+
+  static createPic(tabPic) {
+    const imageId = Math.floor(Math.random() * tabPic.length) + 1;
+    return (`https://i.picsum.photos/id/${tabPic[imageId]}/500/500.jpg`);
   }
 
   static createInterests() {
@@ -59,6 +71,7 @@ export default class PopulateService {
     let cmp = 0;
     const tab = [];
     const givenLogin = [];
+    const tabPic = this.createTabPic();
 
     while (cmp < nbUsers) {
       tab[cmp] = [];
@@ -82,7 +95,7 @@ export default class PopulateService {
       tab[cmp].popularityScore = 0;
       tab[cmp].locations = this.createLocation();
       tab[cmp].interests = this.createInterests();
-      tab[cmp].pics = this.createPic();
+      tab[cmp].pics = this.createPic(tabPic);
       cmp += 1;
     }
     return (tab);

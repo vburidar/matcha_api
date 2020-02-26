@@ -101,8 +101,6 @@ export default (app) => {
   route.get('/custom',
     authValidator(true),
     async (req, res, next) => {
-      console.log(req.query);
-      console.log(JSON.parse(req.query.location));
       try {
         const userList = await UserService.getListUsers(req.session.user_id, req.query);
         return (res.status(200).send(userList));

@@ -601,7 +601,7 @@ export default class User {
     return (location.rows[0]);
   }
 
-  static async getCustomList(userId, location, data) {
+  /* static async getCustomList(userId, location, data) {
     console.log(data);
     const list = await PostgresService.query(`
     SELECT * FROM(
@@ -615,15 +615,13 @@ export default class User {
       interests.name,
       EXTRACT (YEAR FROM AGE(users.birthdate)) AS age
     FROM users
-    
     INNER JOIN
     ((SELECT user_id, interest_id FROM users_interests) as users_interests
       INNER JOIN (SELECT * FROM interests WHERE interests.name = $9) as t1
       ON users_interests.interest_id = t1.id) AS interests
     ON users.id = interests.user_id
-
     INNER JOIN
-      (SELECT 
+      (SELECT
         user_id,
         111 * |/((latitude - $1)^2 + (longitude - $2)^2) as distance
       FROM locations
@@ -648,7 +646,87 @@ export default class User {
       data.popularity[1],
       data.order,
       'archery']);
-    console.log(list.rows);
+    //console.log(list.rows);
     return (list);
+  } */
+
+  static async getCustomList(userId, location, data) {
+    const tab = [
+      location.latitude,
+      location.longitude,
+      parseInt(data.distance, 10),
+      data.age[0],
+      data.age[1],
+      data.popularity[0],
+      data.popularity[1],
+      data.order];
+    let request = `SELECT * FROM(
+    SELECT
+      users.first_name,
+      users.id as user_id,
+      users.popularity_score,
+      users.description,
+      users.gender,
+      users.sexual_preference,
+      locations.distance,
+      interests.list_all_interests,
+      '' as list_interests,
+      images_not_profile.list_images,
+      image_profile.path,
+      EXTRACT (YEAR FROM AGE(users.birthdate)) AS age
+    FROM users `;
+
+    if (data.interest[0] !== 'any_interest') {
+      data.interest.map((elem, idx) => {
+        request += `INNER JOIN
+      ((SELECT user_id, interest_id FROM users_interests) as users_int${idx}
+        INNER JOIN (SELECT * FROM interests WHERE interests.name = $${idx + 9}) as int${idx}
+        ON users_int${idx}.interest_id = int${idx}.id) AS interests${idx}
+      ON users.id = interests${idx}.user_id `;
+        tab.push(elem);
+      });
+    }
+
+    request += `
+    INNER JOIN (
+      SELECT user_id,
+      ARRAY_TO_STRING(ARRAY_AGG(name), ',') AS list_all_interests
+      FROM 
+      users_interests
+      INNER JOIN interests
+      ON users_interests.interest_id = interests.id
+      GROUP BY user_id) AS interests
+    ON interests.user_id = users.id
+
+    FULL OUTER JOIN (
+      SELECT user_id,
+      ARRAY_TO_STRING(ARRAY_AGG(path), ',') AS list_images
+      FROM images
+      WHERE is_profile = FALSE
+      GROUP BY user_id) AS images_not_profile
+    ON images_not_profile.user_id = users.id
+    
+    INNER JOIN (SELECT * FROM images WHERE is_profile = TRUE) as image_profile
+    ON image_profile.user_id = users.id
+  
+  INNER JOIN
+    (SELECT 
+      user_id,
+      111 * |/((latitude - $1)^2 + (longitude - $2)^2) as distance
+    FROM locations
+    WHERE 111 * |/((latitude - $1)^2 + (longitude - $2)^2) < $3) AS locations
+  ON users.id = locations.user_id) AS profile
+  WHERE profile.age >= $4 AND profile.age <= $5
+  AND profile.popularity_score >= $6 AND profile.popularity_score <= $7
+  ORDER BY
+    CASE WHEN $8 = 'distance' THEN distance END,
+    CASE WHEN $8 = 'ageasc' THEN age END
+  ASC,
+    CASE WHEN $8 = 'agedesc' THEN age END,
+    CASE WHEN $8 = 'popularity' THEN popularity_score END
+  DESC`;
+    const list = await PostgresService.query(request, tab);
+    console.log(list.rows);
+    return (list.rows);
   }
 }
