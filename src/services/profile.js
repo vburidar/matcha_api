@@ -65,16 +65,6 @@ export default class ProfileService {
   static async getCompletePrivateProfile(userId) {
     try {
       const user = await User.getCompletePrivateProfile(userId);
-      user.images = user.images.map((image) => {
-        let newPath = image.path;
-        if (/^[a-z]+\.(png|jpg|gif)$/.test(image.path)) {
-          newPath = `${config.url}/pictures/${image.path}`;
-        }
-        return {
-          ...image,
-          path: newPath,
-        };
-      });
 
       return (user);
     } catch (err) {
