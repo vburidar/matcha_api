@@ -266,7 +266,9 @@ export default class User {
         locations.latitude,
         locations.longitude,
         popularity_score,
-        log(1 + (exp(1) - 1) * ((SELECT nb_common_interest::float FROM virtual_interest) / $6)) AS score_interest,
+        (SELECT nb_common_interest FROM virtual_interest) AS test,
+        $6::int AS test2,
+        LN(1 + (exp(1) - 1) * ((SELECT nb_common_interest::float FROM virtual_interest) / $6)) AS score_interest,
         CASE WHEN visitor_received_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visited_liked_visitor,
         CASE WHEN visitor_received_block.sender_id IS NULL THEN FALSE ELSE TRUE END as visited_blocked_visitor,
         CASE WHEN visitor_sent_like.sender_id IS NULL THEN FALSE ELSE TRUE END as visitor_liked_visited,
@@ -396,7 +398,7 @@ export default class User {
       $7::int as gender_sender,
       $6::int as pref_sender,
       abs($5 - EXTRACT (YEAR FROM AGE(users.birthdate))) as age_difference,  
-      log(1 + (exp(1) - 1) * (common_interests::float / $4)) AS score_interest,
+      LN(1 + (exp(1) - 1) * (common_interests::float / $4)) AS score_interest,
       1 / (exp(abs($5 - EXTRACT (YEAR FROM AGE(users.birthdate)))/10)) as score_age,
       1 / (exp(distance / 10)) AS score_distance,
       users.popularity_score::float / 100 as score_popularity,
@@ -620,55 +622,6 @@ FROM
     console.log(location.rows[0]);
     return (location.rows[0]);
   }
-
-  /* static async getCustomList(userId, location, data) {
-    console.log(data);
-    const list = await PostgresService.query(`
-    SELECT * FROM(
-    SELECT
-      users.first_name,
-      users.popularity_score,
-      users.description,
-      users.gender,
-      users.sexual_preference,
-      locations.distance,
-      interests.name,
-      EXTRACT (YEAR FROM AGE(users.birthdate)) AS age
-    FROM users
-    INNER JOIN
-    ((SELECT user_id, interest_id FROM users_interests) as users_interests
-      INNER JOIN (SELECT * FROM interests WHERE interests.name = $9) as t1
-      ON users_interests.interest_id = t1.id) AS interests
-    ON users.id = interests.user_id
-    INNER JOIN
-      (SELECT
-        user_id,
-        111 * |/((latitude - $1)^2 + (longitude - $2)^2) as distance
-      FROM locations
-      WHERE 111 * |/((latitude - $1)^2 + (longitude - $2)^2) < $3) AS locations
-    ON users.id = locations.user_id
-    ) AS profile
-    WHERE profile.age >= $4 AND profile.age <= $5
-    AND profile.popularity_score >= $6 AND profile.popularity_score <= $7
-    ORDER BY
-        CASE WHEN $8 = 'distance' THEN distance END,
-        CASE WHEN $8 = 'ageasc' THEN age END
-    ASC,
-      CASE WHEN $8 = 'agedesc' THEN age END,
-      CASE WHEN $8 = 'popularity' THEN popularity_score END
-    DESC
-`, [location.latitude,
-      location.longitude,
-      parseInt(data.distance, 10),
-      data.age[0],
-      data.age[1],
-      data.popularity[0],
-      data.popularity[1],
-      data.order,
-      'archery']);
-    //console.log(list.rows);
-    return (list);
-  } */
 
   static async getCustomList(userId, location, data) {
     const tab = [

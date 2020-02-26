@@ -45,7 +45,7 @@ export default class PopulateService {
   }
 
   static createPic(tabPic) {
-    const imageId = Math.floor(Math.random() * tabPic.length) + 1;
+    const imageId = Math.floor(Math.random() * tabPic.length);
     return (`https://i.picsum.photos/id/${tabPic[imageId]}/500/500.jpg`);
   }
 
@@ -314,8 +314,8 @@ export default class PopulateService {
 
   static async populate() {
     await Populate.insertInterests();
-    const nUsers = 1000;
-    const partitionSize = 100;
+    const nUsers = 5000;
+    const partitionSize = 1000;
     const tabUser = this.createNUsers(nUsers);
     await this.partitionRequest('user', partitionSize, nUsers, tabUser);
     const tabPromise = await Promise.all(tabUser.map(async (elem) => {
