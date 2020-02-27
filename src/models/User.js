@@ -329,7 +329,6 @@ export default class User {
       ON image_profile.user_id = users.id
       WHERE users.id = $1`, [visitedId, visitor.latitude, visitor.longitude, visitor.id, visitor.age,
       visitor.nb_interests]);
-    console.log(profile.rows);
     return (profile);
   }
 
@@ -488,7 +487,6 @@ export default class User {
     AND visitor_blocked_visited = false
     AND visited_blocked_visitor = false
     ORDER BY score DESC`, [user.id, user.latitude, user.longitude, user.nb_interests, user.age, user.sexual_preference, user.gender]);
-    console.log(suggestionList.rows);
     return (suggestionList);
   }
 
@@ -606,7 +604,6 @@ FROM
   }
 
   static async getLocation(userId) {
-    console.log('userId =', userId);
     const location = await PostgresService.query(`
     SELECT
       latitude,
@@ -617,7 +614,6 @@ FROM
     ON users.id = locations.user_id
     WHERE locations.is_active = TRUE
     AND users.id = $1`, [userId]);
-    console.log(location.rows[0]);
     return (location.rows[0]);
   }
 
@@ -782,7 +778,6 @@ FROM
     CASE WHEN $8 = 'commoninterests' THEN common_interests END DESC
   LIMIT 100  `;
     const list = await PostgresService.query(request, tab);
-    console.log(list.rows);
     return (list.rows);
   }
 }

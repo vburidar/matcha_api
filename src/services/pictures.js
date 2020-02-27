@@ -4,16 +4,21 @@ import sharp from 'sharp';
 import config from '../config';
 
 export default class PicturesService {
-  static uploadPictureFs(pictureData, fileName) {
-    try {
-      fs.writeFileSync(
-        path.join(config.storage.path, fileName),
-        pictureData,
-      );
-      return fileName;
-    } catch (err) {
-      throw new Error('internal_server_error');
-    }
+  static async uploadPictureFs(pictureData, fileName) {
+    return new Promise((resolve, reject) => {
+      try {
+        fs.writeFile(
+          path.join(config.storage.path, fileName),
+          pictureData,
+          (err) => {
+            if (err) reject(err);
+            resolve();
+          },
+        );
+      } catch (err) {
+        reject(new Error('internal_server_error'));
+      }
+    });
   }
 
   static async checkAndResizePicture(base64) {
@@ -33,15 +38,48 @@ export default class PicturesService {
     return pictureData;
   }
 
-  static async uploadPicture(base64) {
-    const pictureData = await this.checkAndResizePicture(base64);
-    const fileName = `${Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 10)}.jpg`;
+  static async uploadPicture(picture) {
+    try {
+      const pictureData = await this.checkAndResizePicture(picture.data);
+      const fileName = `${Math.random().toString(36).replace(/[^a-z]+/g, '').substr(0, 10)}.jpg`;
 
-    if (config.storage.system === 'fs') {
-      this.uploadPictureFs(pictureData, fileName);
+      if (config.storage.system === 'fs') {
+        await this.uploadPictureFs(pictureData, fileName);
+      }
+      // Add other storage systems here
+
+      return { data: fileName, isProfile: picture.isProfile};
+    } catch (err) {
+      return null;
     }
-    // Add other storage systems here
+  }
 
-    return fileName;
+  static async deletePictureFs(fileName) {
+    return new Promise((resolve, reject) => {
+      try {
+        fs.unlink(
+          path.join(config.storage.path, fileName),
+          (err) => {
+            if (err) reject(err);
+            resolve();
+          },
+        );
+      } catch (err) {
+        reject(new Error('internal_server_error'));
+      }
+    });
+  }
+
+  static async deletePicture(fileName) {
+    try {
+      if (config.storage.system === 'fs') {
+        await this.deletePictureFs(fileName);
+      }
+      // Add other storage systems here
+
+      return fileName;
+    } catch (err) {
+      return null;
+    }
   }
 }

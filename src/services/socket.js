@@ -14,8 +14,8 @@ import PostgresService from './postgres';
 export default class SocketService {
   static async load(server) {
     this.io = socketio(server, {
-      pingInterval: 1000,
-      pingTimeout: 5000,
+      pingInterval: 2000,
+      pingTimeout: 10000,
     });
     this.timeout = null;
 
@@ -37,12 +37,6 @@ export default class SocketService {
             .to('/general')
             .emit('userConnected', { userId: user.id });
         }
-
-        /** Get user matches to join channels */
-        const matches = await Event.getMatches(user.id);
-        matches.forEach((match) => {
-          socket.join(`/${Math.min(match.id, user.id)}-${Math.max(match.id, user.id)}`);
-        });
 
         /** Join channel for self only */
         socket.join(`/${user.id}`);
@@ -145,6 +139,16 @@ export default class SocketService {
           const notifications = await Event.markAllNotificationsAsRead(user.id);
           socket.emit('allNotifications', { notifications });
         });
+
+        /** subscribeChat */
+        socket.on('subscribeChat', async ({ receiverId }) => {
+          socket.join(`/${Math.min(receiverId, user.id)}-${Math.max(receiverId, user.id)}`);
+        });
+        /** unSubscribeChat */
+        socket.on('unSubscribeChat', async ({ receiverId }) => {
+          socket.leave(`/${Math.min(receiverId, user.id)}-${Math.max(receiverId, user.id)}`);
+        });
+
 
         /** Disconnection */
         socket.on('disconnect', async () => {

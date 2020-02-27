@@ -26,20 +26,48 @@ export default class ProfileService {
       { inTransaction: true },
     );
 
-    // Add pictures
-    const pictures = [];
+    // Update pictures
+    const tmpPictures = [];
+    const picturesPromises = [];
     picturesData.forEach(async (pictureData) => {
-      const fileName = await PicturesService.uploadPicture(pictureData.data);
-
-      const image = await Image.create(
-        userId,
-        fileName,
-        pictureData.isProfile,
-        { inTransaction: true },
-      );
-
-      pictures.push(image);
+      if (pictureData.data.match(/^data:image\/(png|jpeg|gif);base64,/) !== null) {
+        picturesPromises.push(PicturesService.uploadPicture(pictureData));
+      } else if (pictureData.data.match(/^https?:\/\/localhost:8080\/pictures\//) !== null) {
+        tmpPictures.push({
+          data: pictureData.data.replace(/^https?:\/\/localhost:8080\/pictures\//, ''),
+          isProfile: pictureData.isProfile,
+        });
+      } else {
+        tmpPictures.push(pictureData);
+      }
     });
+
+    tmpPictures.push(...await Promise.all(picturesPromises));
+
+    let pictures = tmpPictures.map((picture) => ({
+      path: picture.data,
+      isProfile: picture.isProfile,
+    }));
+
+    pictures.sort((el) => ((el.isProfile === true) ? 1 : -1));
+
+    const { images, deletedImages } = await Image.update(
+      userId,
+      pictures,
+      { inTransaction: true },
+    );
+
+    pictures = images;
+
+    // Delete images from storage system
+    console.log(deletedImages);
+    const deleteImagesPromises = [];
+    deletedImages.forEach((imageToDelete) => {
+      deleteImagesPromises.push(
+        PicturesService.deletePicture(imageToDelete.path),
+      );
+    });
+    await Promise.all(deleteImagesPromises);
 
     // Add not existing interests and get both existing and newly created ones
     const interests = await Interest.create(interestsData, { inTransaction: true });
