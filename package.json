@@ -4,9 +4,11 @@
   "description": "genial",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --exec npx babel-node src/app.js",
+    "start": "nodemon --exec babel-node src/app.js",
     "lint": "eslint src/**/*.js",
-    "test": "echo \"Error: no test specified\""
+    "reset": "babel-node src/console db reset",
+    "setup": "babel-node src/console db setup",
+    "populate": "babel-node src/console db populate"
   },
   "author": "vburidar",
   "license": "ISC",
@@ -22,7 +24,6 @@
     "cookie": "^0.4.0",
     "cookie-signature": "^1.1.0",
     "cors": "^2.8.5",
-    "cron": "^1.8.2",
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-session": "^1.17.0",

@@ -44,6 +44,12 @@ export default class SocketService {
 
         /** createMessage */
         socket.on('createMessage', async ({ receiverId, content }) => {
+          const matches = await Event.getMatches(user.id);
+          if (matches.findIndex((match) => match.id === receiverId) === -1) {
+            return this.io
+              .to(`/${user.id}`)
+              .emit('messageReceived', { err: new ErrException({ id: 'not_authorized' }) });
+          }
           const message = await UserService.createMessage(
             user.id,
             receiverId,

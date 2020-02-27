@@ -1426,7 +1426,8 @@ const interests = [
   'water_sports',
 ];
 
-const invalidPics = [148,
+const invalidPics = [
+  148,
   747,
   647,
   734,
@@ -1512,7 +1513,8 @@ const invalidPics = [148,
   601,
   963,
   761,
-  24];
+  24,
+];
 
 const locations = [
   {
@@ -1522,7 +1524,7 @@ const locations = [
       longitude: 2.34019,
     },
     radius: 8,
-    population: 0.33043,
+    population: 0.35,
   },
   {
     name: 'Marseille',
@@ -1531,7 +1533,7 @@ const locations = [
       longitude: 5.39507,
     },
     radius: 8,
-    population: 0.459898,
+    population: 0.55,
   },
   {
     name: 'Lyon',
@@ -1540,7 +1542,7 @@ const locations = [
       longitude: 4.84251,
     },
     radius: 6,
-    population: 0.537399,
+    population: 0.72,
   },
   {
     name: 'Toulouse',
@@ -1549,7 +1551,7 @@ const locations = [
       longitude: 1.43200,
     },
     radius: 8,
-    population: 0.608741,
+    population: 0.87,
   },
   {
     name: 'Nice',
@@ -1558,96 +1560,6 @@ const locations = [
       longitude: 7.24355,
     },
     radius: 7,
-    population: 0.660258,
-  },
-  {
-    name: 'Nantes',
-    center: {
-      latitude: 47.230096,
-      longitude: -1.550134,
-    },
-    radius: 8,
-    population: 0.706368,
-  },
-  {
-    name: 'Montpellier',
-    center: {
-      latitude: 43.614723,
-      longitude: 3.868666,
-    },
-    radius: 7,
-    population: 0.748723,
-  },
-  {
-    name: 'Strasbourg',
-    center: {
-      latitude: 48.579138,
-      longitude: 7.746144,
-    },
-    radius: 8,
-    population: 0.790628,
-  },
-  {
-    name: 'Bordeaux',
-    center: {
-      latitude: 44.843944,
-      longitude: -0.589784,
-    },
-    radius: 7,
-    population: 0.828477,
-  },
-  {
-    name: 'Lille',
-    center: {
-      latitude: 50.627330,
-      longitude: 3.054704,
-    },
-    radius: 8,
-    population: 0.863322,
-  },
-  {
-    name: 'Rennes',
-    center: {
-      latitude: 48.111081,
-      longitude: -1.679530,
-    },
-    radius: 6,
-    population: 0.895764,
-  },
-  {
-    name: 'Reims',
-    center: {
-      latitude: 49.250193,
-      longitude: 4.042000,
-    },
-    radius: 7,
-    population: 0.92325,
-  },
-  {
-    name: 'Saint-Etienne',
-    center: {
-      latitude: 45.437366,
-      longitude: 4.384089,
-    },
-    radius: 5,
-    population: 0.949084,
-  },
-  {
-    name: 'Le Havre',
-    center: {
-      latitude: 49.504550,
-      longitude: 0.136920,
-    },
-    radius: 6,
-    population: 0.974617,
-  },
-  {
-    name: 'Toulon',
-    center: {
-      latitude: 43.137247,
-      longitude: 5.934662,
-    },
-    radius: 5,
     population: 1,
   },
 ];

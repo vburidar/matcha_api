@@ -87,7 +87,7 @@ export default class PopulateService {
       givenLogin.push(tab[cmp].firstName + tab[cmp].lastName);
       tab[cmp].sexualPreference = Math.floor(Math.random() * 3) + 1;
       tab[cmp].login = `${tab[cmp].firstName}_${tab[cmp].lastName}`;
-      tab[cmp].email = `${tab[cmp].login}@yopmail.com`;
+      tab[cmp].email = `${tab[cmp].login.toLowerCase()}@yopmail.com`;
       tab[cmp].pwdData = AuthService.hashPwd('Qwerty123');
       tab[cmp].birthdate = this.randomDate('01/01/1988', '01/01/1998');
       tab[cmp].validated = true;
@@ -312,19 +312,27 @@ export default class PopulateService {
     return (null);
   }
 
-  static async populate() {
+  static async populate(nUsers = 1000) {
+    console.log('CREATE INTERESTS');
     await Populate.insertInterests();
-    const nUsers = 5000;
     const partitionSize = 1000;
     const tabUser = this.createNUsers(nUsers);
+
+    console.log('CREATE USERS');
     await this.partitionRequest('user', partitionSize, nUsers, tabUser);
-    const tabPromise = await Promise.all(tabUser.map(async (elem) => {
-      this.generateLike(elem.login);
-      return (this.generateLike(elem.login));
-    }));
+
+    console.log('GENERATE RELEVANT LIKES');
+    const tabPromise = await Promise.all(tabUser.map(async (elem) => (
+      this.generateLike(elem.login)
+    )));
+
+    console.log('INSERT LIKES');
     await this.partitionRequest('like', partitionSize, nUsers, tabPromise);
-    tabUser.map(async (elem) => {
-      await Populate.computePopularityScore(elem.login);
-    });
+
+    console.log('COMPUTE POPULARITY SCORES');
+    await Promise.all(tabUser.map(async (elem) => (
+      Populate.computePopularityScore(elem.login)
+    )));
+    console.log('POPULATE DONE');
   }
 }

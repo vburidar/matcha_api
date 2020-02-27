@@ -2,7 +2,7 @@ import pg from 'pg';
 import config from '../config';
 
 export default class PostgresService {
-  static async load() {
+  static load() {
     if (!this.pool) {
       this.pool = new pg.Pool({
         user: config.postgres.user,
