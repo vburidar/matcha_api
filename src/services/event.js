@@ -13,6 +13,9 @@ export default class EventService {
 
   static async createLike(visitedId, visitorId) {
     try {
+      if (await Event.getBlock(visitedId, visitorId)) {
+        throw new ErrException({ id: 'unauthorized', description: 'User is blocked' });
+      }
       const like = await Event.createLike(visitedId, visitorId);
       const nbLikeVisitor = await Event.getNbLikes(visitorId);
       const nbLikeVisited = await Event.getNbLikes(visitedId);
@@ -24,6 +27,9 @@ export default class EventService {
       Event.updatePopularityScore(scoreVisited, visitedId);
       return (like);
     } catch (err) {
+      if (err.id) {
+        throw (err);
+      }
       throw new ErrException({ id: 'invalid_request', description: 'could not insert like' });
     }
   }
@@ -65,9 +71,16 @@ export default class EventService {
 
   static async createReport(visitedId, visitorId, type) {
     try {
+      const isBlocked = await Event.getBlock(visitedId, visitorId);
+      if (isBlocked) {
+        throw new ErrException({ id: 'unauthorized', description: 'User is blocked' });
+      }
       const like = await Event.createReport(visitedId, visitorId, type);
       return (like);
     } catch (err) {
+      if (err.id) {
+        throw (err);
+      }
       throw new ErrException({ id: 'invalid_request', description: 'could not insert report' });
     }
   }

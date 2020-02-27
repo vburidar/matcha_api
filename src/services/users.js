@@ -1,10 +1,10 @@
 import User from '../models/User';
+import Event from '../models/Event';
 import { ErrException } from '../api/middlewares/errorHandler';
 
 export default class UserService {
   static async getSuggestionList(userId) {
     try {
-      // console.log('userId = ', userId);
       const user = await User.getUserCompleteInfo(userId);
       const list = await User.getSuggestionList(user.rows[0]);
       return (list);
@@ -15,10 +15,16 @@ export default class UserService {
 
   static async getProfileInfo(visitedId, visitorId) {
     try {
+      if (await Event.getBlock(visitedId, visitorId)) {
+        throw new ErrException({ id: 'unauthorized', description: 'User is blocked' });
+      }
       const visitor = await User.getUserCompleteInfo(visitorId);
       const user = await User.getProfileCompleteInfo(visitedId, visitor.rows[0]);
       return (user);
     } catch (err) {
+      if (err.id) {
+        throw (err);
+      }
       throw new ErrException({ id: 'fatal_error', description: 'could not fetch Profile infos' });
     }
   }
@@ -46,18 +52,30 @@ export default class UserService {
 
   static async createMessage(userId, receiverId, content) {
     try {
+      if (await Event.getBlock(userId, receiverId)) {
+        throw new ErrException({ id: 'unauthorized', description: 'User is blocked' });
+      }
       const message = await User.addMessage(userId, receiverId, content);
       return (message);
     } catch (err) {
+      if (err.id) {
+        throw (err);
+      }
       throw new ErrException({ id: 'bad_request', description: 'could not insert message in database' });
     }
   }
 
   static async getMessages(userId, talkerId) {
     try {
+      if (await Event.getBlock(userId, talkerId)) {
+        throw new ErrException({ id: 'unauthorized', description: 'User is blocked' });
+      }
       const messagesList = await User.getMessages(userId, talkerId);
       return (messagesList);
     } catch (err) {
+      if (err.id) {
+        throw (err);
+      }
       throw new ErrException({ id: 'bad_request', description: 'could not fetch message List' });
     }
   }

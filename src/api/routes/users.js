@@ -3,6 +3,7 @@ import { errorHandler, ErrException } from '../middlewares/errorHandler';
 import UserService from '../../services/users';
 import ProfileService from '../../services/profile';
 import authValidator from '../middlewares/authValidator';
+import User from '../../models/User';
 
 const route = Router();
 
@@ -64,6 +65,17 @@ export default (app) => {
       try {
         const userList = await UserService.getListUsers(req.session.user_id, req.query);
         return (res.status(200).send(userList));
+      } catch (err) {
+        return next(err);
+      }
+    });
+
+  route.get('/message',
+    authValidator(true),
+    async (req, res, next) => {
+      try {
+        const messages = await User.getMessages(req.session.user_id, req.query.talkerId);
+        return res.status(200).send(messages);
       } catch (err) {
         return next(err);
       }
