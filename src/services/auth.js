@@ -102,17 +102,19 @@ export default class AuthService {
 
   static async resetPwd(userInput) {
     const user = await User.getUserByLogin(userInput.login);
-    if (user && this.hashPwdWithSalt(user.email, user.salt) === userInput.code) {
+    if (user === null) {
+      throw new ErrException({ id: 'login_invalid' });
+    } else if (this.hashPwdWithSalt(user.email, user.salt) !== userInput.code) {
+      throw new ErrException({ id: 'code_invalid' });
+    } else {
       try {
         const newPwdData = this.hashPwd(userInput.password);
         const changePwd = await User.updatePwd(newPwdData, userInput.login);
         return changePwd;
       } catch (err) {
-        console.log(err);
-        throw new ErrException({ id: 'db_update_failure' });
+        throw new ErrException({ id: 'update_failure', description: 'could not update password in database' });
       }
     }
-    throw new ErrException({ id: 'login_invalid' });
   }
 
   static async testLink(userInput) {

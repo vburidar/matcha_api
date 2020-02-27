@@ -1,9 +1,9 @@
 import { Router } from 'express';
+import { runInNewContext } from 'vm';
 import ProfileService from '../../services/profile';
 import { requestValidator, rv } from '../middlewares/requestValidator';
 import authValidator from '../middlewares/authValidator';
 import { ErrException, errorHandler} from '../middlewares/errorHandler';
-import { runInNewContext } from 'vm';
 
 const route = Router();
 
@@ -13,13 +13,14 @@ export default (app) => {
   route.patch(
     '/',
     authValidator(true),
-    // requestValidator({
-    //   body: {
-    //     // login: [rv.required(), rv.string()],
-    //     // password: [rv.required(), rv.string(), rv.password()],
-    //     // email: [rv.required(), rv.string(), rv.email()],
-    //   },
-    // }),
+    requestValidator({
+      body: {
+        locations: [rv.required()],
+        pictures: [rv.required()],
+        user: [rv.required()],
+        interests: [rv.required()],
+      },
+    }),
     async (req, res, next) => {
       try {
         const {

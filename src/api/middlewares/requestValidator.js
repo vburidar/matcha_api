@@ -25,7 +25,7 @@ const rv = {
   required() {
     return (val, propertyName) => {
       if (typeof val === 'undefined') {
-        throw new ErrException({ id: 'missing', description: 'Missing', propertyName });
+        throw new ErrException({ id: 'missing', description: `Missing${propertyName}` });
       }
     };
   },
