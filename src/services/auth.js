@@ -18,11 +18,11 @@ export default class AuthService {
       try {
         const emailData = {
           to: userInput.email,
-          subject: 'Subscription to Match Point',
+          subject: 'Subscription to See You',
           html: `Congratulations!<br/>
-          You just subscribed to Match Point<br/>
+          You just subscribed to See You<br/>
           Click on <a href="http://localhost:3000/validate-account/${userInput.login}/${this.hashPwdWithSalt(userInput.login, salt)}">
-          this link</a>to validate your account<br/> 
+          this link</a> to validate your account<br/> 
           Connect to your account to start meeting and dating!`,
         };
         EmailService.sendMail(emailData);
@@ -86,11 +86,11 @@ export default class AuthService {
       try {
         const emailData = {
           to: userInput.email,
-          subject: 'Reset your Match Point password',
+          subject: 'Reset your See You password',
           html: `${`Hello!<br/>
           You can reset your password <a href=http://localhost:3000/reset-password/`}${user.login}/${this.hashPwdWithSalt(userInput.email, user.salt)}>
           here</a>! 
-          See you soon on MatchPoint!`,
+          See You soon!`,
         };
         EmailService.sendMail(emailData);
         return user;

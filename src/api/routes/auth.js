@@ -13,9 +13,9 @@ export default (app) => {
     '/signup',
     requestValidator({
       body: {
-        login: [rv.required(), rv.string()],
-        firstName: [rv.required(), rv.string()],
-        lastName: [rv.required(), rv.string()],
+        login: [rv.required(), rv.string(), rv.login()],
+        firstName: [rv.required(), rv.string(), rv.name()],
+        lastName: [rv.required(), rv.string(), rv.name()],
         password: [rv.required(), rv.string(), rv.password()],
         email: [rv.required(), rv.string(), rv.email()],
       },

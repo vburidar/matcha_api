@@ -38,6 +38,20 @@ const rv = {
       }
     };
   },
+  name() {
+    return (val, propertyName) => {
+      if (!val.match(/^([a-zA-Z]|-|\.|\s){2,20}$/)) {
+        throw new ErrException({ id: 'invalid-name', description: 'Invalid Format for Name', propertyName });
+      }
+    };
+  },
+  login() {
+    return (val, propertyName) => {
+      if (!val.match(/^([a-zA-Z1-9]|_){2,20}$/)) {
+        throw new ErrException({ id: 'invalid-login', description: 'Invalid Format for Login', propertyName });
+      }
+    };
+  },
   password() {
     return (val, propertyName) => {
       if (typeof val !== 'undefined') {

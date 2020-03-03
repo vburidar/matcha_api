@@ -26,7 +26,7 @@ export default (app) => {
         const {
           user, interests, locations, pictures,
         } = req.body;
-        if (interests.length < 8 && interests.length > 2) {
+        if (interests.length < 8 && interests.length > 2 && pictures.length > 0 && pictures.length < 6) {
           const ret = await ProfileService.completeProfile(req.session.user_id, user, interests, locations, pictures);
           res.json(ret);
         } else {
