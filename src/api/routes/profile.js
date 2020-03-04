@@ -15,10 +15,10 @@ export default (app) => {
     authValidator(true),
     requestValidator({
       body: {
-        locations: [rv.required()],
-        pictures: [rv.required()],
-        user: [rv.required()],
-        interests: [rv.required()],
+        locations: [rv.required(), rv.locations()],
+        pictures: [rv.required(), rv.pictures()],
+        user: [rv.required(), rv.user()],
+        interests: [rv.required(), rv.interests()],
       },
     }),
     async (req, res, next) => {
