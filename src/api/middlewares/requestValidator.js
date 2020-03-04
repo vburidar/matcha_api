@@ -98,7 +98,7 @@ const rv = {
         throw new ErrException({ id: 'invalid', description: 'user.firstName is of wrong format' });
       } if (!/^([a-zA-Z]|-|\.|\s){2,20}$/.test(val.lastName)) {
         throw new ErrException({ id: 'invalid', description: 'user.lastName is of wrong format' });
-      } if (!/^([a-zA-Z1-9]|_){2,20}$/.test(val.login)) {
+      } if (!/^([a-zA-Z0-9]|_){2,20}$/.test(val.login)) {
         throw new ErrException({ id: 'invalid', description: 'user.login is of wrong format' });
       }
       const minDate = Date.parse('04/03/2002');
