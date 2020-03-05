@@ -27,6 +27,19 @@ export default (app) => {
     },
   );
 
+  route.get(
+    '/block',
+    async (req, res, next) => {
+      try {
+        const block = await (EventService.getBlock(req.query.visitorId, req.query.visitedId));
+        console.log(block.rows);
+        return res.status(200).send(block.rows);
+      } catch (err) {
+        return next(err);
+      }
+    },
+  );
+
   route.delete(
     '/block',
     authValidator(true),
