@@ -27,9 +27,11 @@ export default class SocketService {
 
         /** Reconnection */
         if (this.timeout !== null) {
+          console.log('reconnection');
           clearTimeout(this.timeout);
           this.timeout = null;
         } else {
+          console.log('connection');
           User.update(user.id, { is_online: true }, { inTransaction: false });
           this.io
             .to('/general')
@@ -156,7 +158,9 @@ export default class SocketService {
 
         /** Disconnection */
         socket.on('disconnect', async () => {
+          console.log('disconnection pending...');
           this.timeout = setTimeout(async () => {
+            console.log('disconnected');
             User.update(
               user.id,
               { is_online: false, last_time_online: new Date() },

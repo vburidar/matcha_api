@@ -76,8 +76,9 @@ const rv = {
     return (val, propertyName) => {
       if (typeof (val) === 'undefined') {
         throw new ErrException({ id: 'missing', description: `Missing${propertyName}` });
-      }
-      if (typeof (val.login) !== 'string') {
+      } if (val.email && typeof (val.email) !== 'string') {
+        throw new ErrException({ id: 'missing', description: 'user.email is missing or of wrong format' });
+      } if (val.login && typeof (val.login) !== 'string') {
         throw new ErrException({ id: 'missing', description: 'user.login is missing or of wrong format' });
       } if (typeof (val.firstName) !== 'string') {
         throw new ErrException({ id: 'missing', description: 'user.firstName is missing or of wrong format' });
@@ -96,8 +97,10 @@ const rv = {
         throw new ErrException({ id: 'invalid', description: 'user.firstName is of wrong format' });
       } if (!/^([a-zA-Z]|-|\.|\s){2,20}$/.test(val.lastName)) {
         throw new ErrException({ id: 'invalid', description: 'user.lastName is of wrong format' });
-      } if (!/^([a-zA-Z0-9]|_){2,20}$/.test(val.login)) {
+      } if (val.login && !/^([a-zA-Z0-9]|_){2,20}$/.test(val.login)) {
         throw new ErrException({ id: 'invalid', description: 'user.login is of wrong format' });
+      } if (val.email && !/\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/ig.test(val.email)) {
+        throw new ErrException({ id: 'invalid', description: 'user.email is of wrong format' });
       }
       const minDate = Date.parse('04/03/2002');
       const maxDate = Date.parse('04/03/1920');
