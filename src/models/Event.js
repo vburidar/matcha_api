@@ -155,7 +155,6 @@ export default class User {
       ON event.sender_id = images.user_id
       
       ORDER BY created_at DESC`, [userId]);
-    console.log(list.rows);
     return (list);
   }
 
@@ -350,7 +349,6 @@ export default class User {
       SELECT * FROM blocks 
     WHERE (sender_id = $1 AND receiver_id = $2)
     OR (sender_id = $2 AND receiver_id = $1)`, [visitorId, visitedId]);
-    console.log(block.rows.length > 0);
     return (block.rows.length > 0);
   }
 }

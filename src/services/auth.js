@@ -68,8 +68,6 @@ export default class AuthService {
 
   static async validateAccount(userInput) {
     const user = await User.getUserByLogin(userInput.login);
-    console.log(this.hashPwdWithSalt(user.login, user.salt));
-    console.log(userInput.code);
     if (user && this.hashPwdWithSalt(user.login, user.salt) === userInput.code) {
       const validated = await User.updateValidate(userInput.login);
       return validated;

@@ -60,7 +60,6 @@ export default class ProfileService {
     pictures = images;
 
     // Delete images from storage system
-    console.log(deletedImages);
     const deleteImagesPromises = [];
     deletedImages.forEach((imageToDelete) => {
       deleteImagesPromises.push(
