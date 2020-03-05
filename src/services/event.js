@@ -36,6 +36,9 @@ export default class EventService {
 
   static async deleteLike(visitedId, visitorId) {
     try {
+      if (await Event.getBlock(visitedId, visitorId)) {
+        throw new ErrException({ id: 'unauthorized', description: 'User is blocked' });
+      }
       const like = await Event.deleteLike(visitedId, visitorId);
       const nbLikeVisitor = await Event.getNbLikes(visitorId);
       const nbLikeVisited = await Event.getNbLikes(visitedId);
@@ -81,7 +84,7 @@ export default class EventService {
       if (err.id) {
         throw (err);
       }
-      throw new ErrException({ id: 'invalid_request', description: 'could not insert report' });
+      throw new ErrException({ id: 'invalid_request_report', description: 'could not insert report' });
     }
   }
 
