@@ -14,12 +14,13 @@ function ErrException(rawError) {
 
 function getErrorDictionary() {
   const dict = {
-    '/^.+_not_found$/$': 404,
+    '/^.+_not_found$/': 404,
     '/^.+_already_exists$/': 409,
     '/^.+_already$/': 409,
     '/^.+_invalid$/': 400,
     '/^unauthorized_.+$/': 401,
     '/^.+_unauthorized$/': 401,
+    '/^unauthorized$/': 401,
     '/^forbidden_.+$/': 403,
     '/^.+_forbidden$/': 403,
     '/^.+_not_modified$/': 304,
@@ -34,7 +35,7 @@ function searchStatus(idError) {
   const dict = getErrorDictionary();
   let errStatus = 400;
   Object.keys(dict).forEach((key) => {
-    if (idError.match(key)) {
+    if (key.match(idError)) {
       errStatus = dict[key];
     }
   });

@@ -141,4 +141,13 @@ export default class EventService {
       throw new ErrException({ id: 'invalid_request', description: 'could not update notification' });
     }
   }
+
+  static async getBlock(visitorId, visitedId) {
+    try {
+      const block = await Event.getBlockGiver(visitorId, visitedId);
+      return (block);
+    } catch (err) {
+      throw new ErrException({ id: 'invalid_request', description: 'could not fetch block' });
+    }
+  }
 }
