@@ -280,7 +280,8 @@ export default class User {
         users_interests.list_interests,
         EXTRACT (YEAR FROM AGE(users.birthdate)) AS age,
         users.sexual_preference,
-        users.gender
+        users.gender,
+        users.last_time_online
 
       FROM users
       
