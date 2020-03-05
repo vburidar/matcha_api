@@ -159,7 +159,15 @@ export default class SocketService {
             .emit('userDisconnected', { userId: user.id });
         }, 4000);
       } catch (err) {
-        console.log(err);
+        const dateError = new Date();
+        console.log('*****ERROR*****');
+        console.log(dateError.toUTCString());
+        console.log(err.id);
+        if (err.description) {
+          console.log(err.description);
+        }
+        console.log('Current cookies', s);
+        console.error(err);
       }
     });
   }

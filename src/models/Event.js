@@ -353,12 +353,10 @@ export default class User {
   }
 
   static async getBlockGiver(visitorId, visitedId) {
-    console.log(visitorId, visitedId);
     const block = await PostgresService.query(`
     SELECT * FROM blocks
     WHERE (sender_id = $1 AND receiver_id = $2)
     OR (sender_id = $2 AND receiver_id = $1)`, [visitorId, visitedId]);
-    console.log(block.rows);
     return (block);
   }
 }

@@ -20,7 +20,6 @@ export default class UserService {
       }
       const visitor = await User.getUserCompleteInfo(visitorId);
       const user = await User.getProfileCompleteInfo(visitedId, visitor.rows[0]);
-      console.log(user.rows);
       return (user);
     } catch (err) {
       if (err.id) {

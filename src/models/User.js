@@ -161,82 +161,78 @@ export default class User {
   }
 
   static async getCompletePrivateProfile(userId, { inTransaction = false } = {}) {
-    try {
-      const queryText = `
+    const queryText = `
+    SELECT
+      users.id,
+      users.login,
+      users.email,
+      users.first_name AS "firstName",
+      users.last_name AS "lastName",
+      users.birthdate,
+      users.gender,
+      users.sexual_preference AS "sexualPreference",
+      users.description,
+      users.popularity_score AS "popularityScore",
+
+      CASE WHEN locs.locations IS NULL THEN array_to_json('{}'::json[]) ELSE locs.locations END,
+      CASE WHEN imgs.images IS NULL THEN array_to_json('{}'::json[]) ELSE imgs.images END,
+      CASE WHEN ints.interests IS NULL THEN array_to_json('{}'::json[]) ELSE ints.interests END
+    FROM users
+
+    FULL OUTER JOIN (
       SELECT
-        users.id,
-        users.login,
-        users.email,
-        users.first_name AS "firstName",
-        users.last_name AS "lastName",
-        users.birthdate,
-        users.gender,
-        users.sexual_preference AS "sexualPreference",
-        users.description,
-        users.popularity_score AS "popularityScore",
+        user_id,
+        JSON_AGG(JSON_BUILD_OBJECT(
+          'id', images.id,
+          'isProfile', images.is_profile,
+          'path', CASE
+                    WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', path)
+                    ELSE path
+                  END
+        )) AS images
+      FROM images
+      GROUP BY images.user_id
+    ) AS imgs
+    ON users.id = imgs.user_id
 
-        CASE WHEN locs.locations IS NULL THEN array_to_json('{}'::json[]) ELSE locs.locations END,
-        CASE WHEN imgs.images IS NULL THEN array_to_json('{}'::json[]) ELSE imgs.images END,
-        CASE WHEN ints.interests IS NULL THEN array_to_json('{}'::json[]) ELSE ints.interests END
-      FROM users
+    FULL OUTER JOIN (
+      SELECT
+        user_id,
+        JSON_AGG(JSON_BUILD_OBJECT(
+          'id', locations.id,
+          'latitude', locations.latitude,
+          'longitude', locations.longitude,
+          'isActive', locations.is_active,
+          'name', locations.name
+        )) AS locations
+      FROM locations
+      GROUP BY locations.user_id
+    ) AS locs
+    ON users.id = locs.user_id
 
-      FULL OUTER JOIN (
-        SELECT
-          user_id,
-          JSON_AGG(JSON_BUILD_OBJECT(
-            'id', images.id,
-            'isProfile', images.is_profile,
-            'path', CASE
-                      WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', path)
-                      ELSE path
-                    END
-          )) AS images
-        FROM images
-        GROUP BY images.user_id
-      ) AS imgs
-      ON users.id = imgs.user_id
+    FULL OUTER JOIN (
+      SELECT
+        user_id,
+        JSON_AGG(JSON_BUILD_OBJECT(
+          'id', interests.id,
+          'name', interests.name
+        )) AS interests
+      FROM users_interests
+      INNER JOIN interests ON users_interests.interest_id = interests.id
+      GROUP BY user_id
+    ) AS ints
+    ON users.id = ints.user_id
 
-      FULL OUTER JOIN (
-        SELECT
-          user_id,
-          JSON_AGG(JSON_BUILD_OBJECT(
-            'id', locations.id,
-            'latitude', locations.latitude,
-            'longitude', locations.longitude,
-            'isActive', locations.is_active,
-            'name', locations.name
-          )) AS locations
-        FROM locations
-        GROUP BY locations.user_id
-      ) AS locs
-      ON users.id = locs.user_id
+    WHERE users.id = $1
+    `;
 
-      FULL OUTER JOIN (
-        SELECT
-          user_id,
-          JSON_AGG(JSON_BUILD_OBJECT(
-            'id', interests.id,
-            'name', interests.name
-          )) AS interests
-        FROM users_interests
-        INNER JOIN interests ON users_interests.interest_id = interests.id
-        GROUP BY user_id
-      ) AS ints
-      ON users.id = ints.user_id
+    const user = await PostgresService.query(
+      queryText,
+      [userId],
+      inTransaction,
+    );
 
-      WHERE users.id = $1
-      `;
-
-      const user = await PostgresService.query(
-        queryText,
-        [userId],
-        inTransaction,
-      );
-
-      return user.rows[0];
-    } catch (err) {
-      return console.log(err);
-    }
+    return user.rows[0];
   }
 
   static async getProfileCompleteInfo(visitedId, visitor) {
@@ -494,7 +490,6 @@ export default class User {
   }
 
   static async getUserWithLastMessage(userId, { inTransaction = false } = {}) {
-    try {
       const queryText = `
       WITH
 receivers AS (
@@ -573,9 +568,6 @@ FROM
         inTransaction,
       );
       return users.rows;
-    } catch (err) {
-      return console.log(err);
-    }
   }
 
   static async isComplete(userId) {
