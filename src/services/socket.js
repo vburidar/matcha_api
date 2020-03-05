@@ -17,7 +17,6 @@ export default class SocketService {
       pingInterval: 2000,
       pingTimeout: 10000,
     });
-    this.timeout = null;
 
     this.io.on('connection', async (s) => {
       try {
@@ -25,18 +24,10 @@ export default class SocketService {
 
         const user = await this.checkSession(socket.handshake.headers.cookie);
 
-        /** Reconnection */
-        if (this.timeout !== null) {
-          console.log('reconnection');
-          clearTimeout(this.timeout);
-          this.timeout = null;
-        } else {
-          console.log('connection');
-          User.update(user.id, { is_online: true }, { inTransaction: false });
-          this.io
-            .to('/general')
-            .emit('userConnected', { userId: user.id });
-        }
+        User.update(user.id, { is_online: true }, { inTransaction: false });
+        this.io
+          .to('/general')
+          .emit('userConnected', { userId: user.id });
 
         /** Join channel for self only */
         socket.join(`/${user.id}`);
@@ -158,20 +149,15 @@ export default class SocketService {
 
         /** Disconnection */
         socket.on('disconnect', async () => {
-          console.log('disconnection pending...');
-          this.timeout = setTimeout(async () => {
-            console.log('disconnected');
-            User.update(
-              user.id,
-              { is_online: false, last_time_online: new Date() },
-              { inTransaction: false },
-            );
-            this.io
-              .to('/general')
-              .emit('userDisconnected', { userId: user.id });
-            this.timeout = null;
-          }, 4000);
-        });
+          User.update(
+            user.id,
+            { is_online: false, last_time_online: new Date() },
+            { inTransaction: false },
+          );
+          this.io
+            .to('/general')
+            .emit('userDisconnected', { userId: user.id });
+        }, 4000);
       } catch (err) {
         console.log(err);
       }

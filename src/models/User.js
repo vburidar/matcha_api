@@ -648,7 +648,10 @@ FROM
       interests_2.list_interests,
       CASE WHEN interests_2.common_interests IS NULL THEN 0 ELSE interests_2.common_interests END,
       images_not_profile.list_images,
-      image_profile.path,
+      CASE
+        WHEN image_profile.path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', image_profile.path)
+        ELSE image_profile.path
+      END,
       EXTRACT (YEAR FROM AGE(users.birthdate)) AS age
     FROM users `;
 
@@ -705,7 +708,12 @@ FROM
 
     FULL OUTER JOIN (
       SELECT user_id,
-      ARRAY_TO_STRING(ARRAY_AGG(path), ',') AS list_images
+      ARRAY_TO_STRING(ARRAY_AGG(
+        CASE
+          WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', path)
+          ELSE path
+        END
+      ), ',') AS list_images
       FROM images
       WHERE is_profile = FALSE
       GROUP BY user_id) AS images_not_profile
