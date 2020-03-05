@@ -35,9 +35,7 @@ const rv = {
         throw new ErrException({ id: 'missing', description: `Missing${propertyName}` });
       }
       val.map((elem) => {
-        if (typeof (elem.id) !== 'number') {
-          throw new ErrException({ id: 'missing', description: 'locations.id is missing or of wrong format', propertyName });
-        } if (typeof (elem.latitude) !== 'number') {
+        if (typeof (elem.latitude) !== 'number') {
           throw new ErrException({ id: 'missing', description: 'locations.latitude is missing or of wrong format', propertyName });
         } if (typeof (elem.longitude) !== 'number') {
           throw new ErrException({ id: 'missing', description: 'locations.longitude is missing or of wrong format', propertyName });
