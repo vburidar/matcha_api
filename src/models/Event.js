@@ -101,7 +101,7 @@ export default class User {
     first_name,
     user_id,
     CASE
-      WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', path)
+      WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('${process.env.APP_URL}/pictures/', path)
       ELSE path
     END
      FROM 

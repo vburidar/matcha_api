@@ -7,6 +7,7 @@ if (!envFound) {
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development';
 process.env.APP_PORT = process.env.APP_PORT || 8080;
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 export default {
   url: process.env.APP_URL,

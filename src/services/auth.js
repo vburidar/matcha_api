@@ -21,7 +21,7 @@ export default class AuthService {
           subject: 'Subscription to See You',
           html: `Congratulations!<br/>
           You just subscribed to See You<br/>
-          Click on <a href="http://localhost:3000/validate-account/${userInput.login}/${this.hashPwdWithSalt(userInput.login, salt)}">
+          Click on <a href="http://${process.env.DOMAIN}:3000/validate-account/${userInput.login}/${this.hashPwdWithSalt(userInput.login, salt)}">
           this link</a> to validate your account<br/> 
           Connect to your account to start meeting and dating!`,
         };
@@ -86,7 +86,7 @@ export default class AuthService {
           to: userInput.email,
           subject: 'Reset your See You password',
           html: `${`Hello!<br/>
-          You can reset your password <a href=http://localhost:3000/reset-password/`}${user.login}/${this.hashPwdWithSalt(userInput.email, user.salt)}>
+          You can reset your password <a href=http://${process.env.DOMAIN}:3000/reset-password/`}${user.login}/${this.hashPwdWithSalt(userInput.email, user.salt)}>
           here</a>! 
           See You soon!`,
         };

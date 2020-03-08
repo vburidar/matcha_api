@@ -19,7 +19,7 @@ async function startServer() {
   PostgresService.load();
 
   const corsOptions = {
-    origin: 'http://localhost:3000',
+    origin: `http://${process.env.DOMAIN}:3000`,
     credentials: true,
   };
   app.use(cors(corsOptions));

@@ -186,7 +186,7 @@ export default class User {
           'id', images.id,
           'isProfile', images.is_profile,
           'path', CASE
-                    WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', path)
+                    WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('${process.env.APP_URL}/pictures/', path)
                     ELSE path
                   END
         )) AS images
@@ -256,7 +256,7 @@ export default class User {
         users.description,
         images_not_profile.list_images,
         CASE
-          WHEN image_profile.path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', image_profile.path)
+          WHEN image_profile.path NOT SIMILAR TO 'https*://_*' THEN concat('${process.env.APP_URL}/pictures/', image_profile.path)
           ELSE image_profile.path
         END,
         locations.latitude,
@@ -315,7 +315,7 @@ export default class User {
         SELECT user_id,
         ARRAY_TO_STRING(ARRAY_AGG(
           CASE
-            WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', path)
+            WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('${process.env.APP_URL}/pictures/', path)
             ELSE path
           END
         ), ',') AS list_images
@@ -385,7 +385,7 @@ export default class User {
       locations.distance,
       images_not_profile.list_images,
       CASE
-        WHEN image_profile.path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', image_profile.path)
+        WHEN image_profile.path NOT SIMILAR TO 'https*://_*' THEN concat('${process.env.APP_URL}/pictures/', image_profile.path)
         ELSE image_profile.path
       END,
       users.description,
@@ -412,7 +412,7 @@ export default class User {
       SELECT user_id,
       ARRAY_TO_STRING(ARRAY_AGG(
         CASE
-          WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', path)
+          WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('${process.env.APP_URL}/pictures/', path)
           ELSE path
         END
       ), ',') AS list_images
@@ -535,7 +535,7 @@ all_ids AS
 SELECT
     match.id,
     CASE
-      WHEN images.path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', images.path)
+      WHEN images.path NOT SIMILAR TO 'https*://_*' THEN concat('${process.env.APP_URL}/pictures/', images.path)
       ELSE images.path
     END AS "profilePicture",
     users.is_online AS "isOnline",
@@ -641,7 +641,7 @@ FROM
       CASE WHEN interests_2.common_interests IS NULL THEN 0 ELSE interests_2.common_interests END,
       images_not_profile.list_images,
       CASE
-        WHEN image_profile.path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', image_profile.path)
+        WHEN image_profile.path NOT SIMILAR TO 'https*://_*' THEN concat('${process.env.APP_URL}/pictures/', image_profile.path)
         ELSE image_profile.path
       END,
       EXTRACT (YEAR FROM AGE(users.birthdate)) AS age
@@ -702,7 +702,7 @@ FROM
       SELECT user_id,
       ARRAY_TO_STRING(ARRAY_AGG(
         CASE
-          WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('http://localhost:8080/pictures/', path)
+          WHEN path NOT SIMILAR TO 'https*://_*' THEN concat('${process.env.APP_URL}/pictures/', path)
           ELSE path
         END
       ), ',') AS list_images
