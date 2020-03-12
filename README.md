@@ -10,9 +10,7 @@
 
 ## Who are the developers behind SeeYou?
 
-We are Thomas and Victor, two students at 42 Paris. If you liked our project, you can contact us at vburidar@student.42.fr.
-
-You can also report any bug at this same address.
+We are Thomas and Victor, two students at 42 Paris.
 
 ## Where can I see the website?
 
