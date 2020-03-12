@@ -6,7 +6,7 @@
 
 ## What is SeeYou?
 
-**SeeYou** is the name we choose for our own version of **Matcha**
+**SeeYou** is the name we chose for our own version of **Matcha**
 
 ## Who are the developers behind SeeYou?
 
@@ -14,7 +14,7 @@ We are Thomas and Victor, two students at 42 Paris.
 
 ## Where can I see the website?
 
-The website is accessible [here](http://seeyou.victorburidard.com). We added an algorithm that populate the databases with fake profiles so you can browse it and explore the different functionalities. 
+The website is accessible [here](http://seeyou.victorburidard.com). We added an algorithm that populates the database with fake profiles so you can explore the different functionalities in "real conditions". 
 
 All the profile have **Firstname_LASTNAME** as login and the well secured **Qwerty123** as password so you can test it easily. Examples of login and password combinations are provided on the Signin page of the website.
 
