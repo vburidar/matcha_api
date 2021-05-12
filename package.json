@@ -28,7 +28,7 @@
     "express": "^4.17.1",
     "express-session": "^1.17.0",
     "luxon": "^1.21.3",
-    "nodemailer": "^6.4.2",
+    "nodemailer": "^6.4.16",
     "pg": "^7.17.0",
     "sharp": "^0.24.0",
     "socket.io": "^2.3.0"
